@@ -35,6 +35,25 @@ const RAG_COLOR = { Red: '#FF4444', Amber: '#FF9500', Green: '#00E676' };
 const ragColor  = (rag) => RAG_COLOR[rag] || '#888';
 const ragBg     = (rag) => ({ Red: 'rgba(255,68,68,0.15)', Amber: 'rgba(255,149,0,0.15)', Green: 'rgba(0,230,118,0.15)' }[rag] || 'rgba(255,255,255,0.05)');
 
+// ── Transformer rating sanitisation ───────────────────────────────────────
+// Source CSV sometimes puts internal reference IDs (e.g. 85777) in the rating
+// field. Any plain integer > 999 with no unit is treated as invalid.
+function defaultRating(voltage = '') {
+  const hv = String(voltage).split('/')[0].trim();
+  if (['400', '275'].includes(hv)) return voltage.includes('66') ? '2 × 120MVA' : '2 × 240MVA';
+  if (hv === '132') return voltage.includes('11') ? '2 × 40MVA' : '2 × 60MVA';
+  if (hv === '66')  return '2 × 40MVA';
+  return '2 × 10MVA';
+}
+export function sanitizeRating(rating, voltage) {
+  if (!rating) return null;
+  const str = String(rating);
+  if (str.includes('MVA') || str.includes('×') || str.includes('x')) return str;
+  const num = parseFloat(str);
+  if (!isNaN(num) && num > 999) return `${defaultRating(voltage)} (default — source value invalid)`;
+  return str;
+}
+
 function SatelliteMiniMap({ lat, lng, voltageColor }) {
   return (
     <div className="minimap-wrapper">
@@ -91,7 +110,7 @@ function DetailsTab({ sub, voltageColor, statusColor, onAskChatbot }) {
         <InfoRow label="Region"          value={sub.region} />
         <InfoRow label="Year Installed"  value={sub.yearInstalled} />
         <InfoRow label="Last Inspection" value={sub.lastInspection} />
-        <InfoRow label="Transformer"     value={sub.transformerRating} />
+        <InfoRow label="Transformer"     value={sanitizeRating(sub.transformerRating, sub.voltage)} />
         <InfoRow label="Upstream GSP"    value={sub.upstreamGSP} />
         <InfoRow label="Upstream BSP"    value={sub.upstreamBSP} />
         <InfoRow label="Coordinates"     value={`${sub.lat?.toFixed(4)}°N, ${Math.abs(sub.lng)?.toFixed(4)}°${sub.lng < 0 ? 'W' : 'E'}`} />
@@ -175,7 +194,7 @@ function HeadroomTab({ sub }) {
         <InfoRow label="Min Observed"  value={sub.minDemand != null ? `${sub.minDemand} MVA` : null} />
         <InfoRow label="Contracted"    value={sub.contractedDemand != null ? `${sub.contractedDemand} MVA` : null} />
         <InfoRow label="Est. Headroom" value={sub.demandHeadroom && sub.demandHeadroom !== 'N/A' ? `${sub.demandHeadroom} MVA` : null} valueColor={sub.demandHeadroom < 0 ? '#FF4444' : '#00E676'} />
-        <InfoRow label="Transformer Rating" value={sub.transformerRating} />
+        <InfoRow label="Transformer Rating" value={sanitizeRating(sub.transformerRating, sub.voltage)} />
       </section>
 
       <section className="sidebar-section">

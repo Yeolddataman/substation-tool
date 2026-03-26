@@ -3,6 +3,7 @@ import MapView from './components/MapView';
 import SubstationSidebar from './components/SubstationSidebar';
 import ChatBot from './components/ChatBot';
 import SafetyPanel from './components/SafetyPanel';
+import DataQualityPage from './components/DataQualityPage';
 import LoginScreen from './components/LoginScreen';
 import { getToken, clearToken } from './lib/auth';
 import './App.css';
@@ -15,6 +16,7 @@ export default function App() {
   const [chatInitMessage, setChatInitMessage] = useState('');
   const [chatInitImage, setChatInitImage] = useState(null);
   const [lvCountInEsa, setLvCountInEsa] = useState(null);
+  const [dqOpen, setDqOpen]             = useState(false);
 
   const handleLogout = () => {
     clearToken();
@@ -64,6 +66,12 @@ export default function App() {
             </span>
           </div>
           <button
+            className={`btn btn-outline header-btn ${dqOpen ? 'btn-active' : ''}`}
+            onClick={() => setDqOpen((v) => !v)}
+          >
+            🔗 Data Quality
+          </button>
+          <button
             className={`btn btn-outline header-btn ${safetyOpen ? 'btn-active' : ''}`}
             onClick={() => setSafetyOpen((v) => !v)}
           >
@@ -104,6 +112,9 @@ export default function App() {
         {/* Safety Standards Panel */}
         <SafetyPanel isOpen={safetyOpen} onClose={() => setSafetyOpen(false)} />
       </div>
+
+      {/* Data Quality full-page overlay */}
+      <DataQualityPage isOpen={dqOpen} onClose={() => setDqOpen(false)} />
 
       {/* Chatbot */}
       <ChatBot
