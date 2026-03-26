@@ -48,6 +48,16 @@ const chatLimiter = rateLimit({
   message:         { error: 'Rate limit reached: 10 AI requests per hour. Please try again later.' },
 });
 
+// NERDA: 60 requests per 10 minutes — avoids hammering SSEN's API
+// The frontend only fetches on tab open + caches, so real usage is much lower.
+const nerdaLimiter = rateLimit({
+  windowMs:         10 * 60 * 1000, // 10 minutes
+  max:              60,
+  standardHeaders: 'draft-7',
+  legacyHeaders:   false,
+  message:         { error: 'NERDA rate limit reached. Please wait a few minutes.' },
+});
+
 // ── Startup checks ────────────────────────────────────────────────────────
 const REQUIRED = ['AUTH_USERNAME', 'AUTH_PASSWORD_HASH', 'JWT_SECRET'];
 const missing  = REQUIRED.filter(k => !process.env[k]);
@@ -125,6 +135,51 @@ app.post('/api/chat', requireAuth, chatLimiter, async (req, res) => {
     res.status(upstream.status).json(data);
   } catch (e) {
     res.status(502).json({ error: `Upstream error: ${e.message}` });
+  }
+});
+
+// ── NERDA proxy ───────────────────────────────────────────────────────────
+// Keeps the NERDA API key server-side. All requests are authenticated (JWT)
+// and rate-limited to avoid hammering SSEN's infrastructure.
+const NERDA_BASE = 'https://nerda-prod-apis-v2.azurewebsites.net/api';
+
+function nerdaHeaders() {
+  return {
+    'Authorization': `Bearer ${process.env.NERDA_API_KEY}`,
+    'Accept':        'application/json',
+  };
+}
+
+// GET /api/nerda/substations          → all substations (name→UUID lookup)
+// GET /api/nerda/substations?uuid=... → single substation with measurement IDs
+app.get('/api/nerda/substations', requireAuth, nerdaLimiter, async (req, res) => {
+  const { uuid } = req.query;
+  const url = uuid
+    ? `${NERDA_BASE}/ApiNerdaStatic?substation=${encodeURIComponent(uuid)}`
+    : `${NERDA_BASE}/ApiNerdaStatic`;
+  try {
+    const upstream = await fetch(url, { headers: nerdaHeaders() });
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `NERDA upstream error: ${e.message}` });
+  }
+});
+
+// GET /api/nerda/timeseries?measurement=...&after=...
+// Returns measurement readings from `after` to now (last 12h)
+app.get('/api/nerda/timeseries', requireAuth, nerdaLimiter, async (req, res) => {
+  const { measurement, after } = req.query;
+  if (!measurement || !after) {
+    return res.status(400).json({ error: 'measurement and after params required' });
+  }
+  const url = `${NERDA_BASE}/ApiNerdaAfter?measurement=${encodeURIComponent(measurement)}&after=${encodeURIComponent(after)}`;
+  try {
+    const upstream = await fetch(url, { headers: nerdaHeaders() });
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `NERDA upstream error: ${e.message}` });
   }
 });
 

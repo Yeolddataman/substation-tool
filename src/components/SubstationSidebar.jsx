@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import NerdaTab from './NerdaTab';
 import { MapContainer, TileLayer, CircleMarker } from 'react-leaflet';
 import {
   BarChart, Bar, LineChart, Line,
@@ -560,7 +561,7 @@ function DataQualityTab({ sub, lvCountInEsa }) {
 }
 
 // ── Main Sidebar ──────────────────────────────────────────────────────────
-const TABS = ['Details', 'Headroom', 'Faults', 'LCT', 'Quality'];
+const TABS = ['Details', 'Headroom', 'Faults', 'LCT', 'Quality', 'NERDA'];
 
 export default function SubstationSidebar({ substation, onClose, onAskChatbot, lvCountInEsa }) {
   const [activeTab, setActiveTab] = useState('Details');
@@ -610,6 +611,7 @@ export default function SubstationSidebar({ substation, onClose, onAskChatbot, l
         {activeTab === 'Faults'   && <FaultsTab       sub={substation} />}
         {activeTab === 'LCT'      && <LCTTab          sub={substation} />}
         {activeTab === 'Quality'  && <DataQualityTab  sub={substation} lvCountInEsa={lvCountInEsa} />}
+        {activeTab === 'NERDA'    && <NerdaTab        sub={substation} />}
       </div>
     </div>
   );
