@@ -223,14 +223,21 @@ export default function MapView({ onSelectSubstation, selectedSubstation, onLvCo
   const [lvData, setLV]             = useState(null);
   const [loading, setLoading]       = useState({});
 
-  // When a primary ESA with geometry is selected, filter LV to that ESA only
-  // (prevents rendering all 54k points at once — massive perf improvement)
+  // Track ESA geometry independently — only update when a primary boundary is
+  // selected, never when clicking LV/GSP/BSP (which have no geometry).
+  // Cleared only when the sidebar is fully closed (selectedSubstation = null).
+  const [esaGeometry, setEsaGeometry] = useState(null);
+  useEffect(() => {
+    if (!selectedSubstation)           setEsaGeometry(null);
+    else if (selectedSubstation.geometry) setEsaGeometry(selectedSubstation.geometry);
+    // else: LV/GSP/BSP clicked — leave esaGeometry unchanged
+  }, [selectedSubstation]);
+
   const filteredLvData = useMemo(() => {
     if (!lvData) return null;
-    const geo = selectedSubstation?.geometry;
-    if (!geo) return lvData;
-    return lvData.filter(p => pointInGeometry(p.lat, p.lng, geo));
-  }, [lvData, selectedSubstation]);
+    if (!esaGeometry) return lvData;
+    return lvData.filter(p => pointInGeometry(p.lat, p.lng, esaGeometry));
+  }, [lvData, esaGeometry]);
 
   // Notify parent of LV count within selected ESA (for Data Quality tab)
   useEffect(() => {
