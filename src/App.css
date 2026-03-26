@@ -183,7 +183,6 @@ body {
   gap: 6px;
   padding: 6px 10px;
   border-radius: 6px;
-  border: 1px solid;
   flex: 1;
 }
 
@@ -212,7 +211,6 @@ body {
   font-size: 11px;
   padding: 6px 10px;
   border-radius: 6px;
-  border: 1px solid;
   margin-bottom: 6px;
   color: var(--text-secondary);
 }
@@ -529,7 +527,6 @@ body {
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 4px;
-  border: 1px solid;
   letter-spacing: 0.3px;
 }
 

@@ -86,7 +86,7 @@ function InfoRow({ label, value, valueColor }) {
 function RAGBadge({ label, rag }) {
   if (!rag) return null;
   return (
-    <div className="rag-badge" style={{ background: ragBg(rag), borderColor: ragColor(rag) }}>
+    <div className="rag-badge" style={{ background: ragBg(rag), border: `1px solid ${ragColor(rag)}` }}>
       <span className="rag-dot" style={{ background: ragColor(rag) }} />
       <span className="rag-label">{label}</span>
       <span className="rag-value" style={{ color: ragColor(rag) }}>{rag}</span>
@@ -169,12 +169,12 @@ function HeadroomTab({ sub }) {
           <RAGBadge label="Generation" rag={sub.genRAG} />
         </div>
         {sub.demandConstraint && sub.demandConstraint !== 'N/A' && (
-          <div className="constraint-pill" style={{ background: 'rgba(255,68,68,0.1)', borderColor: '#FF4444' }}>
+          <div className="constraint-pill" style={{ background: 'rgba(255,68,68,0.1)', border: '1px solid #FF4444' }}>
             ⚠ Demand Constraint: {sub.demandConstraint}
           </div>
         )}
         {sub.genConstraint && sub.genConstraint !== 'N/A' && (
-          <div className="constraint-pill" style={{ background: 'rgba(255,149,0,0.1)', borderColor: '#FF9500' }}>
+          <div className="constraint-pill" style={{ background: 'rgba(255,149,0,0.1)', border: '1px solid #FF9500' }}>
             ⚠ Generation Constraint: {sub.genConstraint}
           </div>
         )}
@@ -433,7 +433,7 @@ function LCTTab({ sub }) {
           {LCT_TECHS.map(t => (
             <button key={t.key}
               className={`lct-tech-tab ${activeTech === t.key ? 'lct-tech-tab--active' : ''}`}
-              style={activeTech === t.key ? { borderColor: t.color, color: t.color } : {}}
+              style={activeTech === t.key ? { border: `1px solid ${t.color}`, color: t.color } : {}}
               onClick={() => setActiveTech(t.key)}>
               {t.label.split(' ').slice(0, 2).join(' ')}
             </button>
@@ -576,7 +576,7 @@ export default function SubstationSidebar({ substation, onClose, onAskChatbot, l
       {/* Header */}
       <div className="sidebar-header">
         <div className="sidebar-header-top">
-          <div className="sidebar-type-badge" style={{ background: voltageColor + '22', color: voltageColor, borderColor: voltageColor }}>
+          <div className="sidebar-type-badge" style={{ background: voltageColor + '22', color: voltageColor, border: `1px solid ${voltageColor}` }}>
             {substation.type} · {substation.voltage}
           </div>
           <button className="close-btn" onClick={onClose} aria-label="Close">✕</button>
