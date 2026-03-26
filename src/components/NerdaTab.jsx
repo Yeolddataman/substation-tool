@@ -271,7 +271,13 @@ export default function NerdaTab({ sub }) {
 
     } catch (e) {
       if (!mountedRef.current) return;
-      setErrorMsg(e.message || 'Unknown error');
+      const msg = e.message || 'Unknown error';
+      setErrorMsg(
+        msg.includes('503') ? 'NERDA_API_KEY not set on the server. Add it to Railway environment variables.'
+        : msg.includes('401') || msg.includes('403') ? 'NERDA auth failed — API key may be invalid or expired.'
+        : msg.includes('502') ? 'Could not reach NERDA API. Check server logs for details.'
+        : msg
+      );
       setPhase('error');
     }
   };
