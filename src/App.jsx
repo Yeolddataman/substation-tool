@@ -14,6 +14,7 @@ export default function App() {
   const [safetyOpen, setSafetyOpen] = useState(false);
   const [chatInitMessage, setChatInitMessage] = useState('');
   const [chatInitImage, setChatInitImage] = useState(null);
+  const [lvCountInEsa, setLvCountInEsa] = useState(null);
 
   const handleLogout = () => {
     clearToken();
@@ -86,6 +87,7 @@ export default function App() {
           <MapView
             onSelectSubstation={handleSelectSubstation}
             selectedSubstation={selectedSubstation}
+            onLvCountChange={setLvCountInEsa}
           />
         </div>
 
@@ -95,6 +97,7 @@ export default function App() {
             substation={selectedSubstation}
             onClose={() => setSelectedSubstation(null)}
             onAskChatbot={handleAskChatbot}
+            lvCountInEsa={lvCountInEsa}
           />
         )}
 

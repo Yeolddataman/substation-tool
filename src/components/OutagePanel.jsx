@@ -133,6 +133,92 @@ export function FaultMapMarkers({ outages, visible }) {
   });
 }
 
+// ── 24hr Restoration Timeline ─────────────────────────────────────────────
+function FaultTimeline({ outages }) {
+  const now = Date.now();
+  const windowMs = 24 * 60 * 60 * 1000;
+  const faultsWithEtr = outages.filter(o => o.estimatedRestoration);
+
+  if (faultsWithEtr.length === 0) return (
+    <div style={{ fontSize: 10, color: '#3a5268', fontStyle: 'italic', marginTop: 8 }}>
+      No ETR data available for timeline.
+    </div>
+  );
+
+  const totalCml = faultsWithEtr.reduce((sum, o) => {
+    const minsLeft = Math.max(0, (new Date(o.estimatedRestoration).getTime() - now) / 60000);
+    return sum + (o.affectedCustomerCount || 0) * minsLeft;
+  }, 0);
+
+  return (
+    <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#8899aa', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        24hr Restoration Timeline
+      </div>
+
+      {/* Hour ruler */}
+      <div style={{ display: 'flex', paddingLeft: 84, marginBottom: 4 }}>
+        {[0, 6, 12, 18, 24].map(h => (
+          <div key={h} style={{ flex: h === 0 ? 0 : 6, fontSize: 9, color: '#3a5268', textAlign: h === 0 ? 'left' : 'center' }}>
+            {h === 0 ? 'Now' : `+${h}h`}
+          </div>
+        ))}
+      </div>
+
+      {/* Fault rows */}
+      {faultsWithEtr.map(o => {
+        const color = typeColor(o.type);
+        const etrMs = new Date(o.estimatedRestoration).getTime();
+        const minsLeft = Math.max(0, (etrMs - now) / 60000);
+        const cml = Math.round((o.affectedCustomerCount || 0) * minsLeft);
+        const barPct = Math.min(100, ((etrMs - now) / windowMs) * 100);
+        const overflow = etrMs - now > windowMs;
+
+        return (
+          <div key={o.UUID} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+            {/* Reference label */}
+            <div style={{ width: 78, flexShrink: 0, fontSize: 9, color, fontWeight: 600, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {o.reference}
+            </div>
+            {/* Bar track */}
+            <div style={{ flex: 1, height: 16, background: 'rgba(255,255,255,0.04)', borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
+              <div style={{
+                position: 'absolute', left: 0, top: 2, bottom: 2,
+                width: `${Math.max(barPct, 1)}%`,
+                background: color, opacity: 0.75, borderRadius: 2,
+              }} />
+              {overflow && (
+                <div style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#fff', fontWeight: 700 }}>›</div>
+              )}
+            </div>
+            {/* CML */}
+            <div style={{ width: 72, flexShrink: 0, fontSize: 9, color: '#6a8099', textAlign: 'right', whiteSpace: 'nowrap' }}>
+              {cml > 0 ? `${cml.toLocaleString()} CML` : '—'}
+            </div>
+          </div>
+        );
+      })}
+
+      {outages.length > faultsWithEtr.length && (
+        <div style={{ fontSize: 9, color: '#3a5268', fontStyle: 'italic', marginTop: 4 }}>
+          {outages.length - faultsWithEtr.length} fault{outages.length - faultsWithEtr.length > 1 ? 's' : ''} excluded — no ETR provided
+        </div>
+      )}
+
+      {/* Total CML */}
+      {totalCml > 0 && (
+        <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 10, color: '#8899aa' }}>Total Expected CML</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#FF9500' }}>{Math.round(totalCml).toLocaleString()}</span>
+        </div>
+      )}
+      <div style={{ fontSize: 9, color: '#2e4460', marginTop: 4 }}>
+        CML = Customer Minutes Lost · customers × minutes to ETR
+      </div>
+    </div>
+  );
+}
+
 // ── Main OutagePanel ───────────────────────────────────────────────────────
 export default function OutagePanel({ showOnMap, onToggleMap, onOutagesLoaded, onLocate }) {
   const [outages, setOutages]         = useState([]);
@@ -297,6 +383,9 @@ export default function OutagePanel({ showOnMap, onToggleMap, onOutagesLoaded, o
           {!error && total === 0 && !loading && (
             <div className="outage-empty">No active faults for SEPD South England.</div>
           )}
+
+          {/* 24hr timeline */}
+          {total > 0 && <FaultTimeline outages={outages} />}
 
           <div className="outage-source">
             Source: robintw/sse_powercuts (SSEN live feed) · {lastUpdated

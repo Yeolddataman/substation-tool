@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Tooltip, Marker, GeoJSON, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
@@ -19,6 +19,29 @@ function MapController({ flyToRef }) {
 // ── Helpers ───────────────────────────────────────────────────────────────
 const RAG_COLOR = { Red: '#FF4444', Amber: '#FF9500', Green: '#00E676' };
 const ragColor = (rag) => RAG_COLOR[rag] || '#555';
+
+// ── Point-in-polygon (GeoJSON coords are [lng, lat]) ─────────────────────
+function pointInRing(lat, lng, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi))
+      inside = !inside;
+  }
+  return inside;
+}
+function pointInPolygon(lat, lng, polygon) {
+  if (!pointInRing(lat, lng, polygon[0])) return false;
+  for (let i = 1; i < polygon.length; i++) if (pointInRing(lat, lng, polygon[i])) return false;
+  return true;
+}
+function pointInGeometry(lat, lng, geometry) {
+  if (!geometry) return true;
+  if (geometry.type === 'Polygon')      return pointInPolygon(lat, lng, geometry.coordinates);
+  if (geometry.type === 'MultiPolygon') return geometry.coordinates.some(p => pointInPolygon(lat, lng, p));
+  return true;
+}
 
 const lvIcon = (type) => L.divIcon({
   className: '',
@@ -127,12 +150,12 @@ function BoundaryLayer({ data, headroomData, onSelect }) {
       { sticky: true, className: 'boundary-tooltip' }
     );
 
-    // Always register click — use headroom record if matched, else fall back
-    // to feature properties so selection always works regardless of layer state
+    // Always register click — include feature geometry so ESA filtering and
+    // data quality tab work regardless of whether headroom is loaded
     layer.on('click', () => onSelect(
       sub
-        ? { ...sub, operator: 'SSEN (SEPD)', status: 'Operational', images: [], assets: [sub.transformerRating || 'See headroom data'], safetyZone: 'HV Zone C — 33kV clearance 0.8m minimum' }
-        : { id: `PRI-NRN-${nrn}`, name, shortName: name, type: 'Primary', voltage: feature.properties?.PRIMARY_VOLTAGE_STEP || '33kV', operator: 'SSEN (SEPD)', status: 'Operational', lat: layer.getBounds().getCenter().lat, lng: layer.getBounds().getCenter().lng, nrn, region: feature.properties?.GSP_NAME || '—', description: `Primary substation ESA boundary. GSP: ${feature.properties?.GSP_NAME || '—'}, BSP: ${feature.properties?.BSP_NAME || '—'}.`, assets: ['See SSEN headroom data'], safetyZone: 'HV Zone C — 33kV clearance 0.8m minimum', images: [] }
+        ? { ...sub, geometry: feature.geometry, operator: 'SSEN (SEPD)', status: 'Operational', images: [], assets: [sub.transformerRating || 'See headroom data'], safetyZone: 'HV Zone C — 33kV clearance 0.8m minimum' }
+        : { id: `PRI-NRN-${nrn}`, name, shortName: name, type: 'Primary', voltage: feature.properties?.PRIMARY_VOLTAGE_STEP || '33kV', operator: 'SSEN (SEPD)', status: 'Operational', lat: layer.getBounds().getCenter().lat, lng: layer.getBounds().getCenter().lng, nrn, region: feature.properties?.GSP_NAME || '—', description: `Primary substation ESA boundary. GSP: ${feature.properties?.GSP_NAME || '—'}, BSP: ${feature.properties?.BSP_NAME || '—'}.`, assets: ['See SSEN headroom data'], safetyZone: 'HV Zone C — 33kV clearance 0.8m minimum', images: [], geometry: feature.geometry }
     ));
   }, [headroomData]);
 
@@ -189,7 +212,7 @@ function LayerControls({ layers, onToggle, counts }) {
 }
 
 // ── Main MapView ──────────────────────────────────────────────────────────
-export default function MapView({ onSelectSubstation, selectedSubstation }) {
+export default function MapView({ onSelectSubstation, selectedSubstation, onLvCountChange }) {
   const [layers, setLayers]         = useState({ boundaries: false, headroom: false, lv: false });
   const [showFaults, setShowFaults] = useState(false);
   const [outageData, setOutageData] = useState([]);
@@ -199,6 +222,20 @@ export default function MapView({ onSelectSubstation, selectedSubstation }) {
   const [headroomData, setHeadroom] = useState(null);
   const [lvData, setLV]             = useState(null);
   const [loading, setLoading]       = useState({});
+
+  // When a primary ESA with geometry is selected, filter LV to that ESA only
+  // (prevents rendering all 54k points at once — massive perf improvement)
+  const filteredLvData = useMemo(() => {
+    if (!lvData) return null;
+    const geo = selectedSubstation?.geometry;
+    if (!geo) return lvData;
+    return lvData.filter(p => pointInGeometry(p.lat, p.lng, geo));
+  }, [lvData, selectedSubstation]);
+
+  // Notify parent of LV count within selected ESA (for Data Quality tab)
+  useEffect(() => {
+    onLvCountChange?.(layers.lv && filteredLvData ? filteredLvData.length : null);
+  }, [filteredLvData, layers.lv, onLvCountChange]);
 
   const fetchOnce = useCallback(async (key, url, setter) => {
     setLoading(l => ({ ...l, [key]: true }));
@@ -226,7 +263,7 @@ export default function MapView({ onSelectSubstation, selectedSubstation }) {
   const counts = {
     boundaries: boundaryData?.features?.length ?? 0,
     headroom:   headroomData?.length ?? 0,
-    lv:         lvData?.length ?? 0,
+    lv:         filteredLvData?.length ?? 0,
     boundariesLoading: loading.boundaries,
     headroomLoading:   loading.headroom,
     lvLoading:         loading.lv,
@@ -247,8 +284,8 @@ export default function MapView({ onSelectSubstation, selectedSubstation }) {
           <BoundaryLayer data={boundaryData} headroomData={headroomData || []} onSelect={onSelectSubstation} />
         )}
 
-        {/* LV clustered layer */}
-        {layers.lv && lvData && <LVLayer data={lvData} onSelect={onSelectSubstation} />}
+        {/* LV clustered layer — filtered to selected ESA when one is active */}
+        {layers.lv && filteredLvData && <LVLayer data={filteredLvData} onSelect={onSelectSubstation} />}
 
         {/* Headroom markers — real SEPD data */}
         {layers.headroom && headroomData && (

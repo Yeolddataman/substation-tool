@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker } from 'react-leaflet';
 import {
   BarChart, Bar, LineChart, Line,
@@ -75,19 +75,7 @@ function RAGBadge({ label, rag }) {
 }
 
 // ── Tab: Details ──────────────────────────────────────────────────────────
-function DetailsTab({ sub, voltageColor, statusColor, onAskChatbot, images, setImages }) {
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef(null);
-
-  const handleFiles = (files) => {
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = (e) => setImages(prev => [...prev, { id: Date.now() + Math.random(), url: e.target.result, name: file.name }]);
-      reader.readAsDataURL(file);
-    });
-  };
-
+function DetailsTab({ sub, voltageColor, statusColor, onAskChatbot }) {
   return (
     <>
       <section className="sidebar-section" style={{ paddingBottom: 0 }}>
@@ -97,16 +85,16 @@ function DetailsTab({ sub, voltageColor, statusColor, onAskChatbot, images, setI
 
       <section className="sidebar-section">
         <h3 className="section-title">Asset Details</h3>
-        <InfoRow label="Type"         value={sub.type} />
-        <InfoRow label="Voltage"      value={sub.voltage ? `${sub.voltage} kV` : sub.voltage} />
-        <InfoRow label="Grid Ref"     value={sub.gridRef} />
-        <InfoRow label="Region"       value={sub.region} />
-        <InfoRow label="Year Installed" value={sub.yearInstalled} />
+        <InfoRow label="Type"            value={sub.type} />
+        <InfoRow label="Voltage"         value={sub.voltage ? `${sub.voltage} kV` : sub.voltage} />
+        <InfoRow label="Grid Ref"        value={sub.gridRef} />
+        <InfoRow label="Region"          value={sub.region} />
+        <InfoRow label="Year Installed"  value={sub.yearInstalled} />
         <InfoRow label="Last Inspection" value={sub.lastInspection} />
-        <InfoRow label="Transformer"  value={sub.transformerRating} />
-        <InfoRow label="Upstream GSP" value={sub.upstreamGSP} />
-        <InfoRow label="Upstream BSP" value={sub.upstreamBSP} />
-        <InfoRow label="Coordinates"  value={`${sub.lat?.toFixed(4)}°N, ${Math.abs(sub.lng)?.toFixed(4)}°${sub.lng < 0 ? 'W' : 'E'}`} />
+        <InfoRow label="Transformer"     value={sub.transformerRating} />
+        <InfoRow label="Upstream GSP"    value={sub.upstreamGSP} />
+        <InfoRow label="Upstream BSP"    value={sub.upstreamBSP} />
+        <InfoRow label="Coordinates"     value={`${sub.lat?.toFixed(4)}°N, ${Math.abs(sub.lng)?.toFixed(4)}°${sub.lng < 0 ? 'W' : 'E'}`} />
       </section>
 
       {sub.description && (
@@ -131,34 +119,6 @@ function DetailsTab({ sub, voltageColor, statusColor, onAskChatbot, images, setI
         <button className="btn btn-outline" onClick={() => onAskChatbot(`What safety precautions are required when working at a ${sub.voltage} ${sub.type} substation like ${sub.name}? Reference UK safety standards including ENA Safety Rules and EaWR 1989.`)}>
           Ask Safety Assistant
         </button>
-      </section>
-
-      <section className="sidebar-section">
-        <h3 className="section-title">Site Photos</h3>
-        <div className={`drop-zone ${dragOver ? 'drop-zone--active' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-          onClick={() => fileInputRef.current?.click()}>
-          <div className="drop-icon">📷</div>
-          <div className="drop-text">Drop images here or click to upload</div>
-          <div className="drop-subtext">JPEG, PNG, WebP · Max 10MB</div>
-        </div>
-        <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => handleFiles(e.target.files)} />
-        {images.length > 0 && (
-          <div className="image-gallery">
-            {images.map((img) => (
-              <div key={img.id} className="image-card">
-                <img src={img.url} alt={img.name} className="image-thumb" />
-                <div className="image-actions">
-                  <button className="btn btn-sm btn-primary" onClick={() => onAskChatbot(`Analyse this image of equipment at ${sub.name} substation (${sub.voltage}, operated by ${sub.operator}). Identify any visible safety hazards, equipment type, and relevant UK safety standards that apply.`, img)}>🔍 Analyse</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => setImages(prev => prev.filter(i => i.id !== img.id))}>✕</button>
-                </div>
-                <div className="image-name">{img.name}</div>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
     </>
   );
@@ -478,11 +438,112 @@ function LCTTab({ sub }) {
   );
 }
 
-// ── Main Sidebar ──────────────────────────────────────────────────────────
-const TABS = ['Details', 'Headroom', 'Faults', 'LCT'];
+// ── Tab: Data Quality ─────────────────────────────────────────────────────
+function DataQualityTab({ sub, lvCountInEsa }) {
+  const [dfesStatus, setDfesStatus] = useState('loading');
+  const primaryKey = normPrimary(sub.name);
 
-export default function SubstationSidebar({ substation, onClose, onAskChatbot }) {
-  const [images, setImages] = useState([]);
+  useEffect(() => {
+    loadDfes()
+      .then(({ byPrimary }) => setDfesStatus(byPrimary[primaryKey] ? 'matched' : 'unmatched'))
+      .catch(() => setDfesStatus('error'));
+  }, [primaryKey]);
+
+  const datasets = [
+    {
+      name: 'ESA Boundary',
+      source: 'SSEN Network Maps Portal 2025',
+      matched: sub.type === 'Primary' || !!sub.geometry,
+      value: sub.type === 'Primary' ? '442-feature MultiPolygon shapefile' : null,
+      note: 'Simplified GeoJSON — serves as spatial join anchor for all other datasets',
+    },
+    {
+      name: 'Headroom & Capacity',
+      source: 'SSEN Headroom Dashboard — March 2026',
+      matched: !!(sub.demandRAG || sub.maxDemand != null),
+      value: sub.demandRAG ? `Demand: ${sub.demandRAG} · Gen: ${sub.genRAG || '—'}` : null,
+      note: sub.nrn ? `Joined via NRN prefix: ${sub.nrn}` : 'Join key: NRN prefix (4-digit)',
+    },
+    {
+      name: 'NAFIRS HV Fault Records',
+      source: 'SSEN NAFIRS HV SEPD',
+      matched: !!(sub.faultsByYear && Object.keys(sub.faultsByYear).length > 0),
+      value: sub.faultsByYear && Object.keys(sub.faultsByYear).length > 0
+        ? `${Object.values(sub.faultsByYear).reduce((a, b) => a + b, 0)} faults · ${Object.keys(sub.faultsByYear).length} years`
+        : null,
+      note: `Joined via NRN prefix match to GeoJSON PRIMARY_NRN_SPLIT field`,
+    },
+    {
+      name: 'DFES 2025 LCT Projections',
+      source: 'SSEN Distribution Future Energy Scenarios',
+      matched: dfesStatus === 'matched',
+      loading: dfesStatus === 'loading',
+      value: dfesStatus === 'matched' ? `Matched key: "${primaryKey}"` : null,
+      note: 'Joined via normalised primary name · EV · Heat Pump · Solar · Battery (2025–2050)',
+    },
+    {
+      name: 'LV Substations (in ESA)',
+      source: 'SSEN Open Data Portal (CC BY 4.0)',
+      matched: lvCountInEsa != null && lvCountInEsa > 0,
+      value: lvCountInEsa != null ? `${lvCountInEsa.toLocaleString()} substations within boundary` : null,
+      note: lvCountInEsa == null
+        ? 'Enable the LV layer to count substations within this ESA'
+        : 'Spatial join — point-in-polygon against ESA boundary geometry',
+    },
+  ];
+
+  const matchedCount = datasets.filter(d => d.matched).length;
+  const scoreColor = matchedCount >= 4 ? '#00E676' : matchedCount >= 3 ? '#FF9500' : '#FF4444';
+
+  return (
+    <>
+      <section className="sidebar-section">
+        <h3 className="section-title">Data Interoperability</h3>
+        <div style={{ fontSize: 11, color: '#8899aa', marginBottom: 10 }}>
+          {matchedCount} of {datasets.length} datasets linked to this {sub.type?.toLowerCase() || 'substation'}
+        </div>
+
+        {/* Score bar */}
+        <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, marginBottom: 16, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${(matchedCount / datasets.length) * 100}%`, background: scoreColor, borderRadius: 3, transition: 'width 0.4s' }} />
+        </div>
+
+        {datasets.map(d => (
+          <div key={d.name} style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8,
+            padding: '8px 10px', borderRadius: 6,
+            background: d.matched ? 'rgba(0,230,118,0.04)' : 'rgba(255,255,255,0.02)',
+            border: `1px solid ${d.matched ? 'rgba(0,230,118,0.15)' : d.loading ? 'rgba(255,149,0,0.12)' : 'rgba(255,255,255,0.04)'}`,
+          }}>
+            <div style={{ fontSize: 13, marginTop: 1, flexShrink: 0, color: d.matched ? '#00E676' : d.loading ? '#FF9500' : '#4a6278' }}>
+              {d.loading ? '⏳' : d.matched ? '✓' : '✗'}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: d.matched ? '#c8d8e8' : '#5a7299', marginBottom: 2 }}>
+                {d.name}
+              </div>
+              {d.value && (
+                <div style={{ fontSize: 10, color: '#00E676', marginBottom: 2 }}>{d.value}</div>
+              )}
+              <div style={{ fontSize: 9, color: '#3a5268' }}>{d.source}</div>
+              {d.note && (
+                <div style={{ fontSize: 9, color: '#4a6278', fontStyle: 'italic', marginTop: 2 }}>{d.note}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </section>
+      <p className="data-source-label">
+        Joins: NRN prefix · name normalisation · spatial containment (point-in-polygon)
+      </p>
+    </>
+  );
+}
+
+// ── Main Sidebar ──────────────────────────────────────────────────────────
+const TABS = ['Details', 'Headroom', 'Faults', 'LCT', 'Quality'];
+
+export default function SubstationSidebar({ substation, onClose, onAskChatbot, lvCountInEsa }) {
   const [activeTab, setActiveTab] = useState('Details');
 
   if (!substation) return null;
@@ -525,10 +586,11 @@ export default function SubstationSidebar({ substation, onClose, onAskChatbot })
 
       {/* Tab Content */}
       <div className="sidebar-body">
-        {activeTab === 'Details'  && <DetailsTab  sub={substation} voltageColor={voltageColor} statusColor={statusColor} onAskChatbot={onAskChatbot} images={images} setImages={setImages} />}
-        {activeTab === 'Headroom' && <HeadroomTab sub={substation} />}
-        {activeTab === 'Faults'   && <FaultsTab   sub={substation} />}
-        {activeTab === 'LCT'      && <LCTTab      sub={substation} />}
+        {activeTab === 'Details'  && <DetailsTab      sub={substation} voltageColor={voltageColor} statusColor={statusColor} onAskChatbot={onAskChatbot} />}
+        {activeTab === 'Headroom' && <HeadroomTab     sub={substation} />}
+        {activeTab === 'Faults'   && <FaultsTab       sub={substation} />}
+        {activeTab === 'LCT'      && <LCTTab          sub={substation} />}
+        {activeTab === 'Quality'  && <DataQualityTab  sub={substation} lvCountInEsa={lvCountInEsa} />}
       </div>
     </div>
   );
