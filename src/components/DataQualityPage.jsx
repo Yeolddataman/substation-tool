@@ -280,7 +280,7 @@ const S = {
     color: '#5a7299', cursor: 'pointer', padding: '4px 10px', fontSize: 11,
   },
   filterBtnActive: {
-    background: 'rgba(0,188,212,0.12)', borderColor: '#00bcd4', color: '#00bcd4',
+    background: 'rgba(0,188,212,0.12)', border: '1px solid #00bcd4', color: '#00bcd4',
   },
   tableWrap: { flex: 1, overflowY: 'auto', overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 11 },
