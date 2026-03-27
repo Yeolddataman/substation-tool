@@ -196,9 +196,12 @@ function FaultTimeline({ outages }) {
                 <div style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#fff', fontWeight: 700 }}>›</div>
               )}
             </div>
-            {/* CML */}
-            <div style={{ width: 72, flexShrink: 0, fontSize: 9, color: '#6a8099', textAlign: 'right', whiteSpace: 'nowrap' }}>
+            {/* CML + ETR date */}
+            <div style={{ width: 88, flexShrink: 0, fontSize: 9, color: '#6a8099', textAlign: 'right', whiteSpace: 'nowrap' }}>
               {cml > 0 ? `${cml.toLocaleString()} CML` : '—'}
+              <div style={{ fontSize: 8, color: '#3a5268', marginTop: 1 }}>
+                ETR {new Date(o.estimatedRestoration).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+              </div>
             </div>
           </div>
         );
