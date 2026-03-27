@@ -41,7 +41,6 @@ async function fetchSubstationDetail(uuid) {
 }
 
 async function fetchTimeseries(measurementId, after) {
-  const key = `${measurementId}__${after}`;
   const cached = _timeseriesCache.get(measurementId);
   if (cached && Date.now() - cached.ts < TIMESERIES_TTL) return cached.points;
   const r = await fetch(
@@ -50,72 +49,88 @@ async function fetchTimeseries(measurementId, after) {
   );
   if (!r.ok) throw new Error(`NERDA ${r.status}`);
   const data = await r.json();
-  // Extract value_history array — API may wrap in an object or return the array directly
-  const history = Array.isArray(data) ? data
-    : Array.isArray(data?.value_history) ? data.value_history
-    : Array.isArray(data?.data) ? data.data
+  // NERDA response: { aliasName, AnalogValues: [{ timeStamp, aliasName, value_history: [{_ts, value}] }] }
+  const history =
+    Array.isArray(data?.AnalogValues?.[0]?.value_history) ? data.AnalogValues[0].value_history
+    : Array.isArray(data?.value_history)                  ? data.value_history
+    : Array.isArray(data)                                 ? data
     : [];
   _timeseriesCache.set(measurementId, { points: history, ts: Date.now() });
   return history;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+// NERDA static response structure (per API guide):
+//   { sds_site_id, latitude, longitude,
+//     lines: [{ line_name, nerda_line_uuid,
+//               measurements: [{ nerda_measurement_id, measurementType, unitSymbol, unitMultiplier }] }] }
+//
+// measurementType values seen: LineCurrent, ActivePower, ApparentPower, Voltage, ReactivePower
+const TYPE_LABEL = {
+  activepower:    { label: 'Active Power',    unit: 'MW'  },
+  realpower:      { label: 'Active Power',    unit: 'MW'  },
+  apparentpower:  { label: 'Apparent Power',  unit: 'MVA' },
+  reactivepower:  { label: 'Reactive Power',  unit: 'MVAr'},
+  linecurrent:    { label: 'Current',         unit: 'A'   },
+  current:        { label: 'Current',         unit: 'A'   },
+  voltage:        { label: 'Voltage',         unit: 'kV'  },
+};
+
+// Priority order for display (show most useful metrics first)
+const TYPE_PRIORITY = ['activepower', 'apparentpower', 'linecurrent', 'voltage', 'reactivepower'];
+
 function pickMeasurements(detail) {
-  // Walk lines/transformers in the static response and collect measurement IDs
-  // Prioritise: Active Power (MW), Apparent Power (MVA), Current (A), Voltage (kV)
-  const PRIORITY = [
-    { keys: ['activepow', 'active_pow', 'mw', 'real_pow', 'p_'], label: 'Active Power', unit: 'MW' },
-    { keys: ['apparentpow', 'apparent_pow', 'mva', 'kva'],        label: 'Apparent Power', unit: 'MVA' },
-    { keys: ['current', 'linecurrent', 'amps', '_i'],             label: 'Current', unit: 'A' },
-    { keys: ['voltage', 'volts', 'kv', '_v'],                     label: 'Voltage', unit: 'kV' },
-  ];
-
-  // Flatten all measurements from the detail response
+  // Flatten all measurement objects from lines[]
   const all = [];
-  const walk = (obj) => {
-    if (!obj || typeof obj !== 'object') return;
-    if (Array.isArray(obj)) { obj.forEach(walk); return; }
-    // Measurement entries typically have nerda_measurement_id
-    if (obj.nerda_measurement_id) {
-      all.push({ id: obj.nerda_measurement_id, name: obj.name || obj.measurement_name || '', raw: obj });
-    }
-    Object.values(obj).forEach(walk);
-  };
-  walk(detail);
-
-  const matched = [];
-  const used = new Set();
-
-  for (const priority of PRIORITY) {
-    if (matched.length >= 4) break;
-    for (const m of all) {
-      if (used.has(m.id)) continue;
-      const n = (m.name || m.id).toLowerCase();
-      if (priority.keys.some(k => n.includes(k))) {
-        matched.push({ id: m.id, label: priority.label, unit: priority.unit, name: m.name });
-        used.add(m.id);
-        break;
+  const substation = Array.isArray(detail) ? detail[0] : detail;
+  for (const line of substation?.lines || []) {
+    for (const m of line?.measurements || []) {
+      if (m.nerda_measurement_id) {
+        all.push({
+          id:   m.nerda_measurement_id,
+          type: (m.measurementType || '').toLowerCase().replace(/\s+/g, ''),
+          unit: m.unitSymbol || '',
+          name: m.measurementType || m.nerda_measurement_id,
+          line: line.line_name || '',
+        });
       }
     }
   }
 
-  // If nothing matched by keyword, take first 3
-  if (matched.length === 0) {
-    for (const m of all.slice(0, 3)) {
-      matched.push({ id: m.id, label: m.name || m.id, unit: '', name: m.name });
+  if (all.length === 0) return [];
+
+  const picked = [];
+  const usedTypes = new Set();
+
+  // Pick one measurement per type in priority order
+  for (const typeKey of TYPE_PRIORITY) {
+    if (picked.length >= 4) break;
+    if (usedTypes.has(typeKey)) continue;
+    const m = all.find(x => x.type === typeKey || x.type.includes(typeKey));
+    if (m) {
+      const meta = TYPE_LABEL[typeKey] || { label: m.name, unit: m.unit };
+      picked.push({ id: m.id, label: meta.label, unit: m.unit || meta.unit, name: m.name, line: m.line });
+      usedTypes.add(typeKey);
     }
   }
 
-  return matched;
+  // Fallback: take first few if nothing matched
+  if (picked.length === 0) {
+    for (const m of all.slice(0, 3)) {
+      picked.push({ id: m.id, label: m.name, unit: m.unit, name: m.name, line: m.line });
+    }
+  }
+
+  return picked;
 }
 
 // ── Mini sparkline SVG ──────────────────────────────────────────────────────
 function Sparkline({ points, color = '#00BCD4', height = 40 }) {
   if (!points || points.length < 2) return null;
 
+  // NERDA value_history entries: {_ts, value} — may also include rms/average variants
   const values = points.map(p =>
-    typeof p === 'number' ? p
-    : p?.value ?? p?.rms ?? p?.average ?? p?.v ?? null
+    typeof p === 'number' ? p : p?.value ?? p?.rms ?? p?.average ?? p?.v ?? null
   ).filter(v => v != null && isFinite(v));
 
   if (values.length < 2) return null;
@@ -155,10 +170,9 @@ function Sparkline({ points, color = '#00BCD4', height = 40 }) {
 }
 
 // ── Measurement card ────────────────────────────────────────────────────────
-function MeasurementCard({ label, unit, points, color }) {
+function MeasurementCard({ label, unit, points, color, line }) {
   const values = (points || []).map(p =>
-    typeof p === 'number' ? p
-    : p?.value ?? p?.rms ?? p?.average ?? p?.v ?? null
+    typeof p === 'number' ? p : p?.value ?? p?.rms ?? p?.average ?? p?.v ?? null
   ).filter(v => v != null && isFinite(v));
 
   const latest = values[values.length - 1];
@@ -170,8 +184,9 @@ function MeasurementCard({ label, unit, points, color }) {
     <div style={CS.card}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
         <span style={CS.cardLabel}>{label}</span>
-        <span style={{ fontSize: 16, fontWeight: 700, color }}>{fmt(latest)} <span style={{ fontSize: 10, color: '#5a7299' }}>{unit}</span></span>
+        <span style={{ fontSize: 16, fontWeight: 700, color }}>{fmt(latest)}<span style={{ fontSize: 10, color: '#5a7299', marginLeft: 3 }}>{unit}</span></span>
       </div>
+      {line && <div style={{ fontSize: 9, color: '#3a5268', marginBottom: 3 }}>{line}</div>}
       <Sparkline points={points} color={color} height={36} />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
         <span style={CS.stat}>Min {fmt(min)} {unit}</span>
@@ -355,6 +370,7 @@ export default function NerdaTab({ sub }) {
                   unit={m.unit}
                   points={m.points}
                   color={COLORS[i % COLORS.length]}
+                  line={m.line}
                 />
               ))}
             </div>
