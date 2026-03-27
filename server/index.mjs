@@ -23,6 +23,10 @@ import path from 'path';
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
+
+// Railway (and most cloud platforms) sit behind a reverse proxy that sets
+// X-Forwarded-For. Without this, express-rate-limit throws a validation error.
+app.set('trust proxy', 1);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, '../dist');
 
@@ -153,7 +157,8 @@ app.post('/api/chat', requireAuth, chatLimiter, async (req, res) => {
 // 502s are treated as auth failures so we keep trying other methods.
 const NERDA_BASE = 'https://nerda-prod-apis-v2.azurewebsites.net/api';
 
-const AUTH_FAIL = new Set([401, 403, 502]);
+// 400 included: NERDA returns 400 for unrecognised auth headers (not just bad params)
+const AUTH_FAIL = new Set([400, 401, 403, 502]);
 
 async function nerdaFetch(url) {
   const key      = process.env.NERDA_API_KEY;
