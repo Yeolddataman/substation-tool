@@ -137,7 +137,13 @@ export function FaultMapMarkers({ outages, visible }) {
 function FaultTimeline({ outages }) {
   const now = Date.now();
   const windowMs = 24 * 60 * 60 * 1000;
-  const faultsWithEtr = outages.filter(o => o.estimatedRestoration);
+  const faultsWithEtr = outages
+    .filter(o => o.estimatedRestoration)
+    .map(o => ({
+      ...o,
+      _cml: Math.round((o.affectedCustomerCount || 0) * Math.max(0, (new Date(o.estimatedRestoration).getTime() - now) / 60000)),
+    }))
+    .sort((a, b) => b._cml - a._cml);
 
   if (faultsWithEtr.length === 0) return (
     <div style={{ fontSize: 10, color: '#3a5268', fontStyle: 'italic', marginTop: 8 }}>
@@ -169,8 +175,7 @@ function FaultTimeline({ outages }) {
       {faultsWithEtr.map(o => {
         const color = typeColor(o.type);
         const etrMs = new Date(o.estimatedRestoration).getTime();
-        const minsLeft = Math.max(0, (etrMs - now) / 60000);
-        const cml = Math.round((o.affectedCustomerCount || 0) * minsLeft);
+        const cml = o._cml;
         const barPct = Math.min(100, ((etrMs - now) / windowMs) * 100);
         const overflow = etrMs - now > windowMs;
 
