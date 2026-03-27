@@ -20,7 +20,7 @@ import { rateLimit } from 'express-rate-limit';
 import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import { request as undiciRequest } from 'undici';
+import https from 'https';
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -163,19 +163,37 @@ async function nerdaFetch(url) {
     console.log(`[NERDA] auth=${method} → ${status}  ${url.split('?')[0]}`);
 
   // 1. Long-term key: GET with JSON body  (per NERDA API guide §Authentication)
-  // Node.js fetch() disallows GET bodies (spec-compliant), so we use undici.request
-  // which has no such restriction.
+  // Node.js fetch() disallows GET bodies (spec-compliant), so we use the
+  // built-in https module which imposes no such restriction.
   if (username && key) {
-    const { statusCode, body } = await undiciRequest(url, {
-      method:  'GET',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body:    JSON.stringify({ username, apiKey: key }),
+    const statusAndText = await new Promise((resolve, reject) => {
+      const bodyStr = JSON.stringify({ username, apiKey: key });
+      const parsed  = new URL(url);
+      const req = https.request({
+        hostname: parsed.hostname,
+        path:     parsed.pathname + parsed.search,
+        method:   'GET',
+        headers:  {
+          'Content-Type':   'application/json',
+          'Accept':         'application/json',
+          'Content-Length': Buffer.byteLength(bodyStr),
+        },
+      }, res => {
+        let data = '';
+        res.on('data', chunk => { data += chunk; });
+        res.on('end', () => resolve({ status: res.statusCode, text: data }));
+      });
+      req.on('error', reject);
+      req.write(bodyStr);
+      req.end();
     });
-    log('get-json-body', statusCode);
-    if (!AUTH_FAIL.has(statusCode)) {
-      // Wrap in a fetch-like object so the route handler can call .text()
-      const text = await body.text();
-      return { status: statusCode, ok: statusCode >= 200 && statusCode < 300, text: () => Promise.resolve(text) };
+    log('get-json-body', statusAndText.status);
+    if (!AUTH_FAIL.has(statusAndText.status)) {
+      return {
+        status: statusAndText.status,
+        ok:     statusAndText.status >= 200 && statusAndText.status < 300,
+        text:   () => Promise.resolve(statusAndText.text),
+      };
     }
   }
 
