@@ -279,12 +279,12 @@ function FaultsTab({ sub }) {
 
 // ── LCT tech definitions ──────────────────────────────────────────────────
 const LCT_TECHS = [
-  { key: 'ev',      label: '🚗 Electric Vehicles',   color: '#4FC3F7', unit: 'count'  },
-  { key: 'evc',     label: '🔌 EV Chargers',          color: '#81D4FA', unit: 'count'  },
-  { key: 'dhp',     label: '🔥 Domestic Heat Pumps',  color: '#FF9500', unit: 'count'  },
-  { key: 'ndhp',    label: '🏭 Non-Domestic HPs',     color: '#FFB74D', unit: 'count'  },
-  { key: 'solar',   label: '☀️ Solar PV',             color: '#FFD700', unit: 'MW'     },
-  { key: 'battery', label: '🔋 Battery Storage',      color: '#00E676', unit: 'MWh'    },
+  { key: 'ev',      label: '🚗 Electric Vehicles',       color: '#4FC3F7', unit: 'count' },
+  { key: 'evc',     label: '🔌 EV Charger Capacity',     color: '#81D4FA', unit: 'MW'   },
+  { key: 'dhp',     label: '🔥 Domestic Heat Pumps',     color: '#FF9500', unit: 'count' },
+  { key: 'ndhp',    label: '🏭 Non-Domestic Heat Pumps', color: '#FFB74D', unit: 'm²'   },
+  { key: 'solar',   label: '☀️ Solar PV',               color: '#FFD700', unit: 'MW'   },
+  { key: 'battery', label: '🔋 Battery Storage',         color: '#00E676', unit: 'MW'   },
 ];
 
 const SCEN_META = {
@@ -351,10 +351,10 @@ function LCTSummaryTable({ data }) {
         const y2050 = d.HT?.['2050'] ?? '—';
         const growth = (typeof y2050 === 'number' && typeof now === 'number' && now > 0)
           ? Math.round((y2050 / now - 1) * 100) : null;
-        const fmt = v => typeof v === 'number' ? `${v.toLocaleString()} ${unit}` : '—';
+        const fmt = v => typeof v === 'number' ? v.toLocaleString() : '—';
         return (
           <div key={key} className="lct-table-row">
-            <span style={{ color }}>{label}</span>
+            <span style={{ color }}>{label} <span style={{ opacity: 0.5, fontSize: '0.7em' }}>({unit})</span></span>
             <span>{fmt(now)}</span>
             <span>{fmt(y2035)}</span>
             <span>
