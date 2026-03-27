@@ -8,6 +8,24 @@ import {
 import 'leaflet/dist/leaflet.css';
 import { getVoltageColor, getStatusColor } from '../data/substations';
 
+// ── Smart-meter demand cache ───────────────────────────────────────────────
+let _demandCache = null;
+async function loadDemandByPrimary() {
+  if (!_demandCache) {
+    const r = await fetch('/demand-by-primary.json');
+    _demandCache = await r.json();
+  }
+  return _demandCache;
+}
+const _txCache = {};
+async function loadTransformers(nrn) {
+  if (!_txCache[nrn]) {
+    const r = await fetch(`/demand-transformers/${nrn}.json`);
+    _txCache[nrn] = await r.json();
+  }
+  return _txCache[nrn];
+}
+
 // ── DFES data cache (shared across sidebar instances) ─────────────────────
 let _dfesCache = null;
 let _dfesLicenceCache = null;
@@ -560,8 +578,171 @@ function DataQualityTab({ sub, lvCountInEsa }) {
   );
 }
 
+// ── Tab: Smart-Meter Demand Profile ───────────────────────────────────────
+function DemandTab({ sub }) {
+  const nrn = sub?.nrn;
+  const [primary, setPrimary]     = useState(null);
+  const [txData, setTxData]       = useState(null);
+  const [showTx, setShowTx]       = useState(false);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState(null);
+  const [txLoading, setTxLoading] = useState(false);
+
+  useEffect(() => {
+    if (!nrn) { setLoading(false); return; }
+    setLoading(true); setError(null); setPrimary(null); setTxData(null); setShowTx(false);
+    loadDemandByPrimary()
+      .then(all => {
+        const padded = nrn.padStart(4, '0');
+        const d = all[padded] || all[nrn];
+        if (!d) setError(`No demand data for NRN ${nrn}`);
+        else setPrimary(d);
+      })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [nrn]);
+
+  const toggleTx = () => {
+    if (showTx) { setShowTx(false); return; }
+    if (txData) { setShowTx(true); return; }
+    const padded = (nrn || '').padStart(4, '0');
+    setTxLoading(true);
+    loadTransformers(padded)
+      .then(d => { setTxData(d); setShowTx(true); })
+      .catch(e => setError(e.message))
+      .finally(() => setTxLoading(false));
+  };
+
+  if (loading) return (
+    <section className="sidebar-section">
+      <p className="section-text" style={{ opacity: 0.5 }}>⏳ Loading demand profile…</p>
+    </section>
+  );
+  if (error) return (
+    <section className="sidebar-section">
+      <p className="section-text" style={{ color: '#FF9500' }}>⚠ {error}</p>
+    </section>
+  );
+  if (!primary) return (
+    <section className="sidebar-section">
+      <p className="section-text" style={{ opacity: 0.5 }}>No NRN available for this substation.</p>
+    </section>
+  );
+
+  const { timestamps, kW } = primary;
+  // Format timestamps for display — show label every 4 half-hours (every 2 hours)
+  const chartData = timestamps.map((ts, i) => ({
+    t: i % 4 === 0 ? ts : '',
+    tFull: ts,
+    kW: kW[i],
+    MW: Math.round(kW[i] / 100) / 10,  // 1 d.p. MW
+  }));
+
+  const peakMW  = Math.max(...kW) / 1000;
+  const minMW   = Math.min(...kW) / 1000;
+  const avgMW   = (kW.reduce((a, b) => a + b, 0) / kW.length) / 1000;
+  const loadFactor = avgMW / peakMW;
+
+  // Transformer chart data
+  let txChartData = null;
+  let txKeys = [];
+  if (showTx && txData) {
+    const { transformers } = txData;
+    // Sort transformers by peak demand, take top 15
+    const ranked = Object.entries(transformers)
+      .map(([k, vals]) => ({ k, peak: Math.max(...vals) }))
+      .sort((a, b) => b.peak - a.peak)
+      .slice(0, 15)
+      .map(x => x.k);
+    txKeys = ranked;
+    txChartData = timestamps.map((ts, i) => {
+      const row = { t: i % 4 === 0 ? ts : '', tFull: ts };
+      ranked.forEach(k => { row[k] = Math.round(transformers[k][i] / 100) / 10; });
+      return row;
+    });
+  }
+
+  const TX_COLORS = ['#4FC3F7','#00E676','#FFD700','#FF9500','#FF4444',
+                     '#CE93D8','#80DEEA','#A5D6A7','#FFCC02','#F48FB1',
+                     '#90CAF9','#B0BEC5','#FFAB40','#69F0AE','#EF9A9A'];
+
+  return (
+    <>
+      {/* Summary stats */}
+      <section className="sidebar-section">
+        <h3 className="section-title">Demand Profile — 24 Mar 2026</h3>
+        <p style={{ fontSize: 10, color: '#3a5268', marginBottom: 8 }}>
+          Source: DCC Smart Meter half-hourly data · NRN {nrn}
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          {[
+            { label: 'Peak',  val: `${peakMW.toFixed(1)} MW` },
+            { label: 'Min',   val: `${minMW.toFixed(1)} MW` },
+            { label: 'Avg',   val: `${avgMW.toFixed(1)} MW` },
+            { label: 'Load Factor', val: `${(loadFactor * 100).toFixed(0)}%` },
+          ].map(({ label, val }) => (
+            <div key={label} style={{ flex: '1 1 70px', background: '#0a1929', borderRadius: 6, padding: '6px 8px', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#3a5268', textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
+              <div style={{ fontSize: 13, color: '#4FC3F7', fontWeight: 600 }}>{val}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Primary demand chart */}
+        <ResponsiveContainer width="100%" height={160}>
+          <LineChart data={chartData} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis dataKey="t" tick={{ fill: '#aaa', fontSize: 9 }} interval={0} />
+            <YAxis tick={{ fill: '#aaa', fontSize: 9 }} tickFormatter={v => `${v}MW`} />
+            <RechartTooltip
+              contentStyle={{ background: '#0d1117', border: '1px solid #333', borderRadius: 6, fontSize: 11 }}
+              formatter={(v, _) => [`${v} MW`, 'Demand']}
+              labelFormatter={(_, payload) => payload?.[0]?.payload?.tFull ?? ''}
+            />
+            <Line type="monotone" dataKey="MW" stroke="#4FC3F7" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </section>
+
+      {/* Transformer breakdown toggle */}
+      <section className="sidebar-section" style={{ paddingTop: 0 }}>
+        <button
+          onClick={toggleTx}
+          style={{ fontSize: 11, color: '#4FC3F7', background: 'transparent', border: '1px solid #1a3a5c',
+            borderRadius: 4, padding: '4px 10px', cursor: 'pointer', marginBottom: 8 }}>
+          {txLoading ? '⏳ Loading…' : showTx ? '▲ Hide transformer breakdown' : '▼ Show transformer breakdown (top 15)'}
+        </button>
+
+        {showTx && txChartData && (
+          <>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={txChartData} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="t" tick={{ fill: '#aaa', fontSize: 9 }} interval={0} />
+                <YAxis tick={{ fill: '#aaa', fontSize: 9 }} tickFormatter={v => `${v}MW`} />
+                <RechartTooltip
+                  contentStyle={{ background: '#0d1117', border: '1px solid #333', borderRadius: 6, fontSize: 10 }}
+                  formatter={(v, name) => [`${v} MW`, `TX ${name}`]}
+                  labelFormatter={(_, payload) => payload?.[0]?.payload?.tFull ?? ''}
+                />
+                {txKeys.map((k, i) => (
+                  <Line key={k} type="monotone" dataKey={k} stroke={TX_COLORS[i % TX_COLORS.length]}
+                    strokeWidth={1.5} dot={false} connectNulls />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+            <p style={{ fontSize: 9, color: '#3a5268', marginTop: 4 }}>
+              Transformer NRN (3-digit) — top 15 by peak demand
+            </p>
+          </>
+        )}
+      </section>
+    </>
+  );
+}
+
 // ── Main Sidebar ──────────────────────────────────────────────────────────
-const TABS = ['Details', 'Headroom', 'Faults', 'LCT', 'Quality'];
+const TABS = ['Details', 'Headroom', 'Faults', 'LCT', 'Demand', 'Quality'];
 
 export default function SubstationSidebar({ substation, onClose, onAskChatbot, lvCountInEsa }) {
   const [activeTab, setActiveTab] = useState('Details');
@@ -610,6 +791,7 @@ export default function SubstationSidebar({ substation, onClose, onAskChatbot, l
         {activeTab === 'Headroom' && <HeadroomTab     sub={substation} />}
         {activeTab === 'Faults'   && <FaultsTab       sub={substation} />}
         {activeTab === 'LCT'      && <LCTTab          sub={substation} />}
+        {activeTab === 'Demand'   && <DemandTab       sub={substation} />}
         {activeTab === 'Quality'  && <DataQualityTab  sub={substation} lvCountInEsa={lvCountInEsa} />}
       </div>
     </div>
