@@ -436,7 +436,7 @@ export default function NerdaTab({ sub }) {
       <h3 className="section-title">Near Real-Time Load (NERDA)</h3>
 
       {phase === 'idle' && (
-        <button onClick={load} style={CS.loadBtn}>
+        <button onClick={() => load()} style={CS.loadBtn}>
           Fetch last 30 min of load data
         </button>
       )}
@@ -459,7 +459,7 @@ export default function NerdaTab({ sub }) {
       {phase === 'error' && (
         <div style={CS.status}>
           <span style={{ color: '#FF4444' }}>✗</span> Error: {errorMsg}
-          <button onClick={load} style={{ ...CS.loadBtn, marginTop: 8 }}>Retry</button>
+          <button onClick={() => load()} style={{ ...CS.loadBtn, marginTop: 8 }}>Retry</button>
         </div>
       )}
 
@@ -491,7 +491,7 @@ export default function NerdaTab({ sub }) {
             </div>
           )}
 
-          <button onClick={load} style={{ ...CS.loadBtn, marginTop: 12, opacity: 0.6, fontSize: 10 }}>
+          <button onClick={() => load()} style={{ ...CS.loadBtn, marginTop: 12, opacity: 0.6, fontSize: 10 }}>
             Refresh
           </button>
         </>
