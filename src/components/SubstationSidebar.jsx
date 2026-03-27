@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import NerdaTab from './NerdaTab';
 import { MapContainer, TileLayer, CircleMarker } from 'react-leaflet';
 import {
   BarChart, Bar, LineChart, Line,
@@ -280,12 +279,12 @@ function FaultsTab({ sub }) {
 
 // ── LCT tech definitions ──────────────────────────────────────────────────
 const LCT_TECHS = [
-  { key: 'ev',      label: '🚗 Electric Vehicles',   color: '#4FC3F7', unit: 'vehicles' },
-  { key: 'evc',     label: '🔌 EV Chargers',          color: '#81D4FA', unit: 'chargers' },
-  { key: 'dhp',     label: '🔥 Domestic Heat Pumps',  color: '#FF9500', unit: 'units'    },
-  { key: 'ndhp',    label: '🏭 Non-Domestic HPs',     color: '#FFB74D', unit: 'units'    },
-  { key: 'solar',   label: '☀️ Solar PV',             color: '#FFD700', unit: 'MW'       },
-  { key: 'battery', label: '🔋 Battery Storage',      color: '#00E676', unit: 'MW'       },
+  { key: 'ev',      label: '🚗 Electric Vehicles',   color: '#4FC3F7', unit: 'count'  },
+  { key: 'evc',     label: '🔌 EV Chargers',          color: '#81D4FA', unit: 'count'  },
+  { key: 'dhp',     label: '🔥 Domestic Heat Pumps',  color: '#FF9500', unit: 'count'  },
+  { key: 'ndhp',    label: '🏭 Non-Domestic HPs',     color: '#FFB74D', unit: 'count'  },
+  { key: 'solar',   label: '☀️ Solar PV',             color: '#FFD700', unit: 'MW'     },
+  { key: 'battery', label: '🔋 Battery Storage',      color: '#00E676', unit: 'MWh'    },
 ];
 
 const SCEN_META = {
@@ -344,7 +343,7 @@ function LCTSummaryTable({ data }) {
         <span>2035 (EE)</span>
         <span>2050 (HT)</span>
       </div>
-      {LCT_TECHS.map(({ key, label, unit }) => {
+      {LCT_TECHS.map(({ key, label, unit, color }) => {
         const d = data[key];
         if (!d) return null;
         const now   = d.EE?.Baseline ?? d.HT?.Baseline ?? '—';
@@ -352,13 +351,14 @@ function LCTSummaryTable({ data }) {
         const y2050 = d.HT?.['2050'] ?? '—';
         const growth = (typeof y2050 === 'number' && typeof now === 'number' && now > 0)
           ? Math.round((y2050 / now - 1) * 100) : null;
+        const fmt = v => typeof v === 'number' ? `${v.toLocaleString()} ${unit}` : '—';
         return (
           <div key={key} className="lct-table-row">
-            <span style={{ color: LCT_TECHS.find(t=>t.key===key)?.color }}>{label}</span>
-            <span>{typeof now === 'number' ? now.toLocaleString() : '—'}</span>
-            <span>{typeof y2035 === 'number' ? y2035.toLocaleString() : '—'}</span>
+            <span style={{ color }}>{label}</span>
+            <span>{fmt(now)}</span>
+            <span>{fmt(y2035)}</span>
             <span>
-              {typeof y2050 === 'number' ? y2050.toLocaleString() : '—'}
+              {fmt(y2050)}
               {growth != null && <span className="lct-growth"> +{growth}%</span>}
             </span>
           </div>
@@ -561,7 +561,7 @@ function DataQualityTab({ sub, lvCountInEsa }) {
 }
 
 // ── Main Sidebar ──────────────────────────────────────────────────────────
-const TABS = ['Details', 'Headroom', 'Faults', 'LCT', 'Quality', 'NERDA'];
+const TABS = ['Details', 'Headroom', 'Faults', 'LCT', 'Quality'];
 
 export default function SubstationSidebar({ substation, onClose, onAskChatbot, lvCountInEsa }) {
   const [activeTab, setActiveTab] = useState('Details');
@@ -611,7 +611,6 @@ export default function SubstationSidebar({ substation, onClose, onAskChatbot, l
         {activeTab === 'Faults'   && <FaultsTab       sub={substation} />}
         {activeTab === 'LCT'      && <LCTTab          sub={substation} />}
         {activeTab === 'Quality'  && <DataQualityTab  sub={substation} lvCountInEsa={lvCountInEsa} />}
-        {activeTab === 'NERDA'    && <NerdaTab        sub={substation} />}
       </div>
     </div>
   );

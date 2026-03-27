@@ -3,7 +3,6 @@
 //   Substation locations & types: https://data.ssen.co.uk/@ssen-distribution/ssen-substation-data
 //   Capacity & headroom:          https://data.ssen.co.uk/@ssen-distribution/generation-availability-and-network-capacity
 //   LV feeder utilisation:        https://data.ssen.co.uk/collections/network-capacity
-//   Near real-time LV (NeRDA):    https://data.ssen.co.uk/@ssen-distribution/nerda_opengrid_dashboard
 //   Network maps:                 https://network-maps.ssen.co.uk/opendataportal
 // Coordinates are approximate public domain locations. Capacity/utilisation are indicative
 // values representative of SSEN published headroom data (SEPD licence area).
@@ -286,7 +285,6 @@ export const DATA_SOURCES = {
   substations: 'https://data.ssen.co.uk/@ssen-distribution/ssen-substation-data',
   capacity:    'https://data.ssen.co.uk/@ssen-distribution/generation-availability-and-network-capacity',
   lvFeeder:    'https://data.ssen.co.uk/collections/network-capacity',
-  nerda:       'https://data.ssen.co.uk/@ssen-distribution/nerda_opengrid_dashboard',
   networkMap:  'https://network-maps.ssen.co.uk/opendataportal',
 };
 

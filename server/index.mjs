@@ -20,8 +20,6 @@ import { rateLimit } from 'express-rate-limit';
 import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import https from 'https';
-
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
@@ -51,16 +49,6 @@ const chatLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders:   false,
   message:         { error: 'Rate limit reached: 10 AI requests per hour. Please try again later.' },
-});
-
-// NERDA: 60 requests per 10 minutes — avoids hammering SSEN's API
-// The frontend only fetches on tab open + caches, so real usage is much lower.
-const nerdaLimiter = rateLimit({
-  windowMs:         10 * 60 * 1000, // 10 minutes
-  max:              60,
-  standardHeaders: 'draft-7',
-  legacyHeaders:   false,
-  message:         { error: 'NERDA rate limit reached. Please wait a few minutes.' },
 });
 
 // ── Startup checks ────────────────────────────────────────────────────────
@@ -140,127 +128,6 @@ app.post('/api/chat', requireAuth, chatLimiter, async (req, res) => {
     res.status(upstream.status).json(data);
   } catch (e) {
     res.status(502).json({ error: `Upstream error: ${e.message}` });
-  }
-});
-
-// ── NERDA proxy ───────────────────────────────────────────────────────────
-// Keeps the NERDA API key server-side. All requests are JWT-authenticated
-// and rate-limited to avoid hammering SSEN's infrastructure.
-//
-// Auth per NERDA API guide (Phase 1 production):
-//   Long-term key: GET request with {username, apiKey} as JSON body.
-//   Short-term key: Authorization: Bearer <token> header.
-// The JSON-body approach is tried first; Bearer is the fallback.
-const NERDA_BASE = 'https://nerda-prod-apis-v2.azurewebsites.net/api';
-
-const AUTH_FAIL = new Set([400, 401, 403, 502]);
-
-// nerdaFetch(url, shortTermKey)
-// shortTermKey: optional Bearer token copied from the NERDA portal (1h validity).
-// If provided it is used directly. The server-side long-term key is a fallback
-// for any future NERDA API changes that accept it.
-async function nerdaFetch(url, shortTermKey) {
-  const longKey  = process.env.NERDA_API_KEY;
-  const username = process.env.NERDA_USERNAME;
-
-  const log = (method, status) =>
-    console.log(`[NERDA] auth=${method} → ${status}  ${url.split('?')[0]}`);
-
-  // 1. Short-term portal key as Bearer (primary — only method NERDA data endpoints accept)
-  if (shortTermKey) {
-    const r = await fetch(url, {
-      headers: { Authorization: `Bearer ${shortTermKey}`, Accept: 'application/json' },
-    });
-    log('short-term-bearer', r.status);
-    if (!AUTH_FAIL.has(r.status)) return r;
-  }
-
-  // 2. Long-term key as GET with JSON body (per API guide; may work in future)
-  if (username && longKey) {
-    const statusAndText = await new Promise((resolve, reject) => {
-      const bodyStr = JSON.stringify({ username, apiKey: longKey });
-      const parsed  = new URL(url);
-      const req = https.request({
-        hostname: parsed.hostname,
-        path:     parsed.pathname + parsed.search,
-        method:   'GET',
-        headers:  {
-          'Content-Type':   'application/json',
-          'Accept':         'application/json',
-          'Content-Length': Buffer.byteLength(bodyStr),
-        },
-      }, res => {
-        let data = '';
-        res.on('data', chunk => { data += chunk; });
-        res.on('end', () => resolve({ status: res.statusCode, text: data }));
-      });
-      req.on('error', reject);
-      req.write(bodyStr);
-      req.end();
-    });
-    log('long-term-body', statusAndText.status);
-    if (!AUTH_FAIL.has(statusAndText.status)) {
-      return {
-        status: statusAndText.status,
-        ok:     statusAndText.status >= 200 && statusAndText.status < 300,
-        text:   () => Promise.resolve(statusAndText.text),
-      };
-    }
-  }
-
-  // 3. Long-term key directly as Bearer (last resort)
-  const r = await fetch(url, {
-    headers: { Authorization: `Bearer ${longKey}`, Accept: 'application/json' },
-  });
-  log('long-term-bearer', r.status);
-  return r;
-}
-
-// GET /api/nerda/substations?uuid=...  → single substation by NERDA UUID
-// GET /api/nerda/substations?name=...  → search by sds_site_id (preferred — avoids full-list 500)
-// GET /api/nerda/substations           → all substations (likely 500 — avoid)
-app.get('/api/nerda/substations', requireAuth, nerdaLimiter, async (req, res) => {
-  const shortKey = req.headers['x-nerda-key'] || '';
-  const { uuid, name } = req.query;
-  const url = uuid ? `${NERDA_BASE}/ApiNerdaStatic?substation=${encodeURIComponent(uuid)}`
-            : name ? `${NERDA_BASE}/ApiNerdaStatic?sds_site_id=${encodeURIComponent(name)}`
-            : `${NERDA_BASE}/ApiNerdaStatic`;
-  try {
-    const upstream = await nerdaFetch(url, shortKey);
-    const text = await upstream.text();
-    console.log(`[NERDA] GET substations → ${upstream.status} (${text.length} bytes)`);
-    try {
-      res.status(upstream.status).json(JSON.parse(text));
-    } catch {
-      res.status(upstream.status).send(text);
-    }
-  } catch (e) {
-    console.error(`[NERDA] substations fetch failed: ${e.message}`);
-    res.status(502).json({ error: `NERDA network error: ${e.message}` });
-  }
-});
-
-// GET /api/nerda/timeseries?measurement=...&after=...
-// Returns measurement readings from `after` to now (last 12h)
-app.get('/api/nerda/timeseries', requireAuth, nerdaLimiter, async (req, res) => {
-  const shortKey = req.headers['x-nerda-key'] || '';
-  const { measurement, after } = req.query;
-  if (!measurement || !after) {
-    return res.status(400).json({ error: 'measurement and after params required' });
-  }
-  const url = `${NERDA_BASE}/ApiNerdaAfter?measurement=${encodeURIComponent(measurement)}&after=${encodeURIComponent(after)}`;
-  try {
-    const upstream = await nerdaFetch(url, shortKey);
-    const text = await upstream.text();
-    console.log(`[NERDA] GET timeseries → ${upstream.status} (${text.length} bytes)`);
-    try {
-      res.status(upstream.status).json(JSON.parse(text));
-    } catch {
-      res.status(upstream.status).send(text);
-    }
-  } catch (e) {
-    console.error(`[NERDA] timeseries fetch failed: ${e.message}`);
-    res.status(502).json({ error: `NERDA network error: ${e.message}` });
   }
 });
 
