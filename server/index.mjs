@@ -155,19 +155,30 @@ const NERDA_BASE = 'https://nerda-prod-apis-v2.azurewebsites.net/api';
 
 const AUTH_FAIL = new Set([400, 401, 403, 502]);
 
-async function nerdaFetch(url) {
-  const key      = process.env.NERDA_API_KEY;
+// nerdaFetch(url, shortTermKey)
+// shortTermKey: optional Bearer token copied from the NERDA portal (1h validity).
+// If provided it is used directly. The server-side long-term key is a fallback
+// for any future NERDA API changes that accept it.
+async function nerdaFetch(url, shortTermKey) {
+  const longKey  = process.env.NERDA_API_KEY;
   const username = process.env.NERDA_USERNAME;
 
   const log = (method, status) =>
     console.log(`[NERDA] auth=${method} → ${status}  ${url.split('?')[0]}`);
 
-  // 1. Long-term key: GET with JSON body  (per NERDA API guide §Authentication)
-  // Node.js fetch() disallows GET bodies (spec-compliant), so we use the
-  // built-in https module which imposes no such restriction.
-  if (username && key) {
+  // 1. Short-term portal key as Bearer (primary — only method NERDA data endpoints accept)
+  if (shortTermKey) {
+    const r = await fetch(url, {
+      headers: { Authorization: `Bearer ${shortTermKey}`, Accept: 'application/json' },
+    });
+    log('short-term-bearer', r.status);
+    if (!AUTH_FAIL.has(r.status)) return r;
+  }
+
+  // 2. Long-term key as GET with JSON body (per API guide; may work in future)
+  if (username && longKey) {
     const statusAndText = await new Promise((resolve, reject) => {
-      const bodyStr = JSON.stringify({ username, apiKey: key });
+      const bodyStr = JSON.stringify({ username, apiKey: longKey });
       const parsed  = new URL(url);
       const req = https.request({
         hostname: parsed.hostname,
@@ -187,7 +198,7 @@ async function nerdaFetch(url) {
       req.write(bodyStr);
       req.end();
     });
-    log('get-json-body', statusAndText.status);
+    log('long-term-body', statusAndText.status);
     if (!AUTH_FAIL.has(statusAndText.status)) {
       return {
         status: statusAndText.status,
@@ -197,26 +208,24 @@ async function nerdaFetch(url) {
     }
   }
 
-  // 2. Bearer fallback (works for short-term/session keys from the portal)
+  // 3. Long-term key directly as Bearer (last resort)
   const r = await fetch(url, {
-    headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
+    headers: { Authorization: `Bearer ${longKey}`, Accept: 'application/json' },
   });
-  log('bearer', r.status);
+  log('long-term-bearer', r.status);
   return r;
 }
 
 // GET /api/nerda/substations          → all substations (name→UUID lookup)
 // GET /api/nerda/substations?uuid=... → single substation with measurement IDs
 app.get('/api/nerda/substations', requireAuth, nerdaLimiter, async (req, res) => {
-  if (!process.env.NERDA_API_KEY) {
-    return res.status(503).json({ error: 'NERDA_API_KEY not configured on this server.' });
-  }
+  const shortKey = req.headers['x-nerda-key'] || '';
   const { uuid } = req.query;
   const url = uuid
     ? `${NERDA_BASE}/ApiNerdaStatic?substation=${encodeURIComponent(uuid)}`
     : `${NERDA_BASE}/ApiNerdaStatic`;
   try {
-    const upstream = await nerdaFetch(url);
+    const upstream = await nerdaFetch(url, shortKey);
     const text = await upstream.text();
     console.log(`[NERDA] GET substations → ${upstream.status} (${text.length} bytes)`);
     try {
@@ -233,16 +242,14 @@ app.get('/api/nerda/substations', requireAuth, nerdaLimiter, async (req, res) =>
 // GET /api/nerda/timeseries?measurement=...&after=...
 // Returns measurement readings from `after` to now (last 12h)
 app.get('/api/nerda/timeseries', requireAuth, nerdaLimiter, async (req, res) => {
-  if (!process.env.NERDA_API_KEY) {
-    return res.status(503).json({ error: 'NERDA_API_KEY not configured on this server.' });
-  }
+  const shortKey = req.headers['x-nerda-key'] || '';
   const { measurement, after } = req.query;
   if (!measurement || !after) {
     return res.status(400).json({ error: 'measurement and after params required' });
   }
   const url = `${NERDA_BASE}/ApiNerdaAfter?measurement=${encodeURIComponent(measurement)}&after=${encodeURIComponent(after)}`;
   try {
-    const upstream = await nerdaFetch(url);
+    const upstream = await nerdaFetch(url, shortKey);
     const text = await upstream.text();
     console.log(`[NERDA] GET timeseries → ${upstream.status} (${text.length} bytes)`);
     try {

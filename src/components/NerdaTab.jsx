@@ -8,6 +8,29 @@ const normName = (name = '') =>
     .replace(/\s+/g, ' ')
     .trim();
 
+// ── Short-term key store (sessionStorage, cleared on browser close) ────────
+// NERDA data endpoints only accept short-term Bearer tokens obtained by
+// logging into the NERDA portal. The long-term key cannot be used directly
+// with data endpoints. The user pastes their portal key here; it lasts 1 h.
+const NERDA_KEY_SS = 'nerda_short_term_key';
+const NERDA_KEY_TS = 'nerda_short_term_key_ts';
+
+function getShortTermKey() {
+  return sessionStorage.getItem(NERDA_KEY_SS) || '';
+}
+function setShortTermKey(k) {
+  sessionStorage.setItem(NERDA_KEY_SS, k);
+  sessionStorage.setItem(NERDA_KEY_TS, Date.now().toString());
+}
+function shortTermKeyAge() {
+  const ts = Number(sessionStorage.getItem(NERDA_KEY_TS) || 0);
+  return ts ? Math.floor((Date.now() - ts) / 60_000) : null; // minutes
+}
+function clearShortTermKey() {
+  sessionStorage.removeItem(NERDA_KEY_SS);
+  sessionStorage.removeItem(NERDA_KEY_TS);
+}
+
 // ── Module-level caches (survive tab switches, cleared on page reload) ─────
 let _allStationsCache = null;          // full NERDA station list
 let _allStationsPromise = null;        // in-flight request de-duplication
@@ -16,36 +39,40 @@ const _timeseriesCache = new Map();    // measurementId → { points, ts }
 const SUBSTATION_TTL  = 15 * 60_000;  // 15 min
 const TIMESERIES_TTL  = 10 * 60_000;  // 10 min
 
-function authHeaders() {
+function appAuthHeaders() {
   return { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' };
 }
+function nerdaProxyHeaders(shortKey) {
+  // Pass the short-term key to the server proxy via a custom header
+  return { ...appAuthHeaders(), 'X-Nerda-Key': shortKey };
+}
 
-async function fetchAllStations() {
+async function fetchAllStations(shortKey) {
   if (_allStationsCache) return _allStationsCache;
   if (_allStationsPromise) return _allStationsPromise;
-  _allStationsPromise = fetch('/api/nerda/substations', { headers: authHeaders() })
+  _allStationsPromise = fetch('/api/nerda/substations', { headers: nerdaProxyHeaders(shortKey) })
     .then(r => { if (!r.ok) throw new Error(`NERDA ${r.status}`); return r.json(); })
     .then(data => { _allStationsCache = data; _allStationsPromise = null; return data; })
     .catch(e => { _allStationsPromise = null; throw e; });
   return _allStationsPromise;
 }
 
-async function fetchSubstationDetail(uuid) {
+async function fetchSubstationDetail(uuid, shortKey) {
   const cached = _substationCache.get(uuid);
   if (cached && Date.now() - cached.ts < SUBSTATION_TTL) return cached.data;
-  const r = await fetch(`/api/nerda/substations?uuid=${encodeURIComponent(uuid)}`, { headers: authHeaders() });
+  const r = await fetch(`/api/nerda/substations?uuid=${encodeURIComponent(uuid)}`, { headers: nerdaProxyHeaders(shortKey) });
   if (!r.ok) throw new Error(`NERDA ${r.status}`);
   const data = await r.json();
   _substationCache.set(uuid, { data, ts: Date.now() });
   return data;
 }
 
-async function fetchTimeseries(measurementId, after) {
+async function fetchTimeseries(measurementId, after, shortKey) {
   const cached = _timeseriesCache.get(measurementId);
   if (cached && Date.now() - cached.ts < TIMESERIES_TTL) return cached.points;
   const r = await fetch(
     `/api/nerda/timeseries?measurement=${encodeURIComponent(measurementId)}&after=${encodeURIComponent(after)}`,
-    { headers: authHeaders() }
+    { headers: nerdaProxyHeaders(shortKey) }
   );
   if (!r.ok) throw new Error(`NERDA ${r.status}`);
   const data = await r.json();
@@ -197,13 +224,63 @@ function MeasurementCard({ label, unit, points, color, line }) {
   );
 }
 
+// ── Key entry panel ─────────────────────────────────────────────────────────
+function KeyEntryPanel({ onKeySet }) {
+  const [draft, setDraft] = useState('');
+  const age = shortTermKeyAge();
+  const existing = getShortTermKey();
+
+  return (
+    <div style={{ fontSize: 11, color: '#8899aa', lineHeight: 1.6 }}>
+      {existing && age !== null && (
+        <div style={{ marginBottom: 8, color: age >= 55 ? '#FF4444' : '#00BCD4', fontSize: 10 }}>
+          {age >= 55
+            ? '⚠ Key may have expired (entered >55 min ago). Paste a new one.'
+            : `Key entered ${age} min ago · valid for ~${60 - age} more min`}
+        </div>
+      )}
+      <div style={{ marginBottom: 6 }}>
+        NERDA data endpoints require a <strong style={{ color: '#cdd' }}>short-term portal key</strong>
+        {' '}(valid 1 hour).
+      </div>
+      <ol style={{ margin: '0 0 10px 16px', padding: 0, fontSize: 10, color: '#6a8299' }}>
+        <li>Log in at <span style={{ color: '#4FC3F7' }}>nerda.ssen.co.uk</span></li>
+        <li>Open the ☰ menu (top right)</li>
+        <li>Click <em>Copy Short-Term API Key</em></li>
+        <li>Paste it below</li>
+      </ol>
+      <input
+        type="password"
+        placeholder="Paste short-term API key…"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        style={{
+          width: '100%', boxSizing: 'border-box',
+          padding: '6px 8px', borderRadius: 5,
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(0,188,212,0.3)',
+          color: '#cdd', fontSize: 11, fontFamily: 'inherit',
+          marginBottom: 6,
+        }}
+      />
+      <button
+        onClick={() => { if (draft.trim()) { setShortTermKey(draft.trim()); onKeySet(); } }}
+        disabled={!draft.trim()}
+        style={{ ...CS.loadBtn, opacity: draft.trim() ? 1 : 0.4 }}
+      >
+        Use this key
+      </button>
+    </div>
+  );
+}
+
 // ── Main tab component ──────────────────────────────────────────────────────
 export default function NerdaTab({ sub }) {
-  const [phase, setPhase]       = useState('idle');   // idle | searching | loading | ready | error | not-found
+  const [phase, setPhase]         = useState('idle');   // idle | need-key | searching | loading | ready | error | not-found
   const [nerdaUuid, setNerdaUuid] = useState(null);
   const [nerdaName, setNerdaName] = useState(null);
-  const [measurements, setMeasurements] = useState([]);  // [{ id, label, unit, points }]
-  const [errorMsg, setErrorMsg] = useState('');
+  const [measurements, setMeasurements] = useState([]);
+  const [errorMsg, setErrorMsg]   = useState('');
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -212,7 +289,6 @@ export default function NerdaTab({ sub }) {
   }, []);
 
   useEffect(() => {
-    // Reset when substation changes
     setPhase('idle');
     setNerdaUuid(null);
     setNerdaName(null);
@@ -222,12 +298,16 @@ export default function NerdaTab({ sub }) {
 
   const load = async () => {
     if (!sub || sub.type !== 'Primary') return;
+
+    const shortKey = getShortTermKey();
+    if (!shortKey) { setPhase('need-key'); return; }
+
     setPhase('searching');
     setErrorMsg('');
 
     try {
       // Step 1: find the NERDA UUID by matching name
-      const allStations = await fetchAllStations();
+      const allStations = await fetchAllStations(shortKey);
       const myNorm = normName(sub.name);
 
       // allStations may be an array or object — normalise
@@ -254,7 +334,7 @@ export default function NerdaTab({ sub }) {
       setPhase('loading');
 
       // Step 2: get measurement IDs for this substation
-      const detail = await fetchSubstationDetail(uuid);
+      const detail = await fetchSubstationDetail(uuid, shortKey);
       if (!mountedRef.current) return;
 
       const picked = pickMeasurements(detail);
@@ -273,7 +353,7 @@ export default function NerdaTab({ sub }) {
       for (const m of picked) {
         if (!mountedRef.current) return;
         try {
-          const points = await fetchTimeseries(m.id, after);
+          const points = await fetchTimeseries(m.id, after, shortKey);
           results.push({ ...m, points });
         } catch {
           results.push({ ...m, points: [] });
@@ -287,9 +367,15 @@ export default function NerdaTab({ sub }) {
     } catch (e) {
       if (!mountedRef.current) return;
       const msg = e.message || 'Unknown error';
+      if (msg.includes('401') || msg.includes('403')) {
+        // Key likely expired — clear it and ask for a new one
+        clearShortTermKey();
+        _allStationsCache = null;
+        setPhase('need-key');
+        return;
+      }
       setErrorMsg(
-        msg.includes('503') ? 'NERDA_API_KEY not set on the server. Add it to Railway environment variables.'
-        : msg.includes('401') || msg.includes('403') ? 'NERDA auth failed — API key may be invalid or expired.'
+        msg.includes('503') ? 'Server configuration error. Check Railway environment variables.'
         : msg.includes('502') ? 'Could not reach NERDA API. Check server logs for details.'
         : msg
       );
@@ -320,6 +406,10 @@ export default function NerdaTab({ sub }) {
         <button onClick={load} style={CS.loadBtn}>
           Fetch last 12h of load data
         </button>
+      )}
+
+      {phase === 'need-key' && (
+        <KeyEntryPanel onKeySet={() => { setPhase('idle'); load(); }} />
       )}
 
       {phase === 'searching' && (
