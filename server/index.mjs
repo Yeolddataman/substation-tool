@@ -146,19 +146,59 @@ app.post('/api/chat', requireAuth, chatLimiter, async (req, res) => {
 // Keeps the NERDA API key server-side. All requests are JWT-authenticated
 // and rate-limited to avoid hammering SSEN's infrastructure.
 //
-// Auth strategy: NERDA's API guide states long-term keys are sent "in the
-// request body (not as a Bearer token)" — {username, apiKey} JSON body.
-// However the data endpoints are GETs, so we try four approaches in order
-// and return the first non-auth-error response:
-//   1. Bearer header  (works for short-term/session keys)
-//   2. X-Api-Key header  (Azure API Management pattern)
-//   3. apiKey query parameter
-//   4. POST with {username, apiKey} JSON body  (matches NERDA API guide)
-// 502s are treated as auth failures so we keep trying other methods.
+// Auth strategy (tried in order until one works):
+//   1. Exchange long-term key for a session token via GenerateApiKey,
+//      then use that as Bearer  (primary documented approach)
+//   2. Bearer with the raw long-term key  (fallback)
+//   3. Basic auth: base64(username:apiKey)
+//   4. ApiKey scheme: "Authorization: ApiKey {key}"
+//   5. Ocp-Apim-Subscription-Key header  (Azure API Management)
 const NERDA_BASE = 'https://nerda-prod-apis-v2.azurewebsites.net/api';
 
-// 400 included: NERDA returns 400 for unrecognised auth headers (not just bad params)
+// Status codes we treat as auth failures — fall through to next method
 const AUTH_FAIL = new Set([400, 401, 403, 502]);
+
+// Session token cache — avoids hitting GenerateApiKey on every request
+let _sessionToken   = null;
+let _sessionExpiry  = 0;
+
+async function getNerdaSessionToken() {
+  if (_sessionToken && Date.now() < _sessionExpiry) return _sessionToken;
+
+  const key      = process.env.NERDA_API_KEY;
+  const username = process.env.NERDA_USERNAME;
+  if (!key || !username) return null;
+
+  try {
+    const r = await fetch(`${NERDA_BASE}/GenerateApiKey`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body:    JSON.stringify({ username, apiKey: key }),
+    });
+    console.log(`[NERDA] GenerateApiKey → ${r.status}`);
+    if (!r.ok) return null;
+
+    const text = await r.text();
+    console.log(`[NERDA] GenerateApiKey body: ${text.slice(0, 200)}`);
+
+    let data;
+    try { data = JSON.parse(text); } catch { data = { token: text.trim() }; }
+
+    // API may return the token under various field names
+    const token = data?.token || data?.access_token || data?.apiKey
+                || data?.key  || data?.result        || (typeof data === 'string' ? data : null);
+
+    if (token && typeof token === 'string' && token.length > 8) {
+      _sessionToken  = token;
+      _sessionExpiry = Date.now() + 55 * 60_000; // assume ~1h, refresh at 55 min
+      console.log('[NERDA] Session token obtained and cached.');
+      return token;
+    }
+  } catch (e) {
+    console.error(`[NERDA] GenerateApiKey failed: ${e.message}`);
+  }
+  return null;
+}
 
 async function nerdaFetch(url) {
   const key      = process.env.NERDA_API_KEY;
@@ -167,37 +207,45 @@ async function nerdaFetch(url) {
   const log = (method, status) =>
     console.log(`[NERDA] auth=${method} → ${status}  ${url.split('?')[0]}`);
 
-  // 1. Bearer token
+  // 1. Exchange long-term key → session token, use as Bearer
+  const sessionToken = await getNerdaSessionToken();
+  if (sessionToken && sessionToken !== key) {
+    const r = await fetch(url, {
+      headers: { Authorization: `Bearer ${sessionToken}`, Accept: 'application/json' },
+    });
+    log('session-bearer', r.status);
+    if (!AUTH_FAIL.has(r.status)) return r;
+  }
+
+  // 2. Long-term key directly as Bearer
   let r = await fetch(url, {
     headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
   });
   log('bearer', r.status);
   if (!AUTH_FAIL.has(r.status)) return r;
 
-  // 2. X-Api-Key header (Azure API Management)
-  r = await fetch(url, {
-    headers: { 'X-Api-Key': key, Accept: 'application/json' },
-  });
-  log('x-api-key', r.status);
-  if (!AUTH_FAIL.has(r.status)) return r;
-
-  // 3. apiKey query parameter
-  const sep = url.includes('?') ? '&' : '?';
-  r = await fetch(`${url}${sep}apiKey=${encodeURIComponent(key)}`, {
-    headers: { Accept: 'application/json' },
-  });
-  log('query-param', r.status);
-  if (!AUTH_FAIL.has(r.status)) return r;
-
-  // 4. POST with credentials in body (long-term key — NERDA API guide §3.2)
+  // 3. HTTP Basic auth: base64(username:apiKey)
   if (username) {
+    const basic = Buffer.from(`${username}:${key}`).toString('base64');
     r = await fetch(url, {
-      method:  'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ username, apiKey: key }),
+      headers: { Authorization: `Basic ${basic}`, Accept: 'application/json' },
     });
-    log('post-body', r.status);
+    log('basic', r.status);
+    if (!AUTH_FAIL.has(r.status)) return r;
   }
+
+  // 4. "ApiKey" scheme (used by some Azure-hosted APIs)
+  r = await fetch(url, {
+    headers: { Authorization: `ApiKey ${key}`, Accept: 'application/json' },
+  });
+  log('apikey-scheme', r.status);
+  if (!AUTH_FAIL.has(r.status)) return r;
+
+  // 5. Ocp-Apim-Subscription-Key (Azure API Management)
+  r = await fetch(url, {
+    headers: { 'Ocp-Apim-Subscription-Key': key, Accept: 'application/json' },
+  });
+  log('ocp-apim', r.status);
 
   return r; // return last response regardless
 }
