@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import 'leaflet/dist/leaflet.css';
 import { getVoltageColor, getStatusColor } from '../data/substations';
+import { fetchForecast } from '../lib/forecast';
 
 // ── Smart-meter demand cache ───────────────────────────────────────────────
 // Single file: { date, timestamps[48], primaries: { nrn: { kW[48], meters, transformers:{id:{name,kW[48]}} } } }
@@ -718,10 +719,110 @@ function DemandTab({ sub, primaryNrn }) {
   );
 }
 
-// ── Main Sidebar ──────────────────────────────────────────────────────────
-const TABS = ['Details', 'Headroom', 'Faults', 'LCT', 'Demand', 'Quality'];
+// ── Forecast Tab ──────────────────────────────────────────────────────────
+const FORECAST_RAG_COLOR = { Red: '#FF4444', Yellow: '#FFD700', Green: '#00E676' };
+const FORECAST_RAG_BG    = { Red: 'rgba(255,68,68,0.12)', Yellow: 'rgba(255,215,0,0.12)', Green: 'rgba(0,230,118,0.12)' };
+const FORECAST_RAG_ICON  = { Red: '🔴', Yellow: '🟡', Green: '🟢' };
 
-export default function SubstationSidebar({ substation, onClose, onAskChatbot, lvCountInEsa }) {
+function ForecastTab({ sub, forecastData: parentForecast }) {
+  const [forecast, setForecast] = useState(parentForecast || null);
+  const [loading,  setLoading]  = useState(!parentForecast);
+  const [error,    setError]    = useState(null);
+
+  useEffect(() => {
+    if (parentForecast) { setForecast(parentForecast); return; }
+    fetchForecast()
+      .then(d => { setForecast(d); setLoading(false); })
+      .catch(e => { setError(e.message); setLoading(false); });
+  }, [parentForecast]);
+
+  const nrn = sub?.nrn;
+  const primary = forecast?.primaries?.[nrn];
+
+  const avgFaults = sub?.faultsByYear
+    ? (() => {
+        const vals = Object.values(sub.faultsByYear).map(Number);
+        return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+      })()
+    : null;
+
+  return (
+    <section className="sidebar-section">
+      <h3 className="section-title">3-Day Fault Risk Forecast</h3>
+
+      {loading && <p style={{ fontSize: 11, color: '#6a8099' }}>Fetching weather forecast…</p>}
+      {error   && <p style={{ fontSize: 11, color: '#FF4444' }}>⚠ {error}</p>}
+
+      {!nrn && !loading && (
+        <p style={{ fontSize: 11, color: '#6a8099' }}>No NRN available for this substation.</p>
+      )}
+
+      {nrn && forecast && !primary && (
+        <p style={{ fontSize: 11, color: '#6a8099' }}>No forecast model data for NRN {nrn}.</p>
+      )}
+
+      {primary && forecast?.days && (
+        <>
+          {/* 3-day RAG table */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            {forecast.days.map((d, i) => {
+              const day = primary.days[i];
+              const rag = day?.rag || 'Green';
+              return (
+                <div key={i} style={{
+                  flex: 1, borderRadius: 6, padding: '8px 6px', textAlign: 'center',
+                  background: FORECAST_RAG_BG[rag],
+                  border: `1px solid ${FORECAST_RAG_COLOR[rag]}44`,
+                }}>
+                  <div style={{ fontSize: 9, color: '#6a8099', marginBottom: 3 }}>{d.label}</div>
+                  <div style={{ fontSize: 20, lineHeight: 1 }}>{FORECAST_RAG_ICON[rag]}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: FORECAST_RAG_COLOR[rag], marginTop: 3 }}>{rag}</div>
+                  <div style={{ fontSize: 9, color: '#4a6070', marginTop: 4 }}>
+                    💨 {day.gust} km/h
+                  </div>
+                  {day.rain > 0 && (
+                    <div style={{ fontSize: 9, color: '#4a6070' }}>🌧 {day.rain} mm</div>
+                  )}
+                  {day.snow > 0 && (
+                    <div style={{ fontSize: 9, color: '#4a6070' }}>❄ {day.snow} cm</div>
+                  )}
+                  <div style={{ fontSize: 9, color: '#4a6070' }}>🌡 {day.tmax}°C</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Risk context */}
+          <div style={{ fontSize: 10, color: '#6a8099', marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+              <span>Network vulnerability</span>
+              <span style={{ color: '#aaa' }}>
+                {primary.vuln <= 0.7 ? 'Low' : primary.vuln <= 1.0 ? 'Below avg' : primary.vuln <= 1.2 ? 'Above avg' : 'High'}
+                {' '}({primary.vuln}×)
+              </span>
+            </div>
+            {avgFaults != null && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Avg annual faults (NAFIRS)</span>
+                <span style={{ color: '#aaa' }}>{avgFaults}</span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ fontSize: 9, color: '#2e4460', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 6 }}>
+            Weather: Open-Meteo · Risk: wind (55%), rain (25%), snow (20%)
+            <br />Generated: {new Date(forecast.generatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+// ── Main Sidebar ──────────────────────────────────────────────────────────
+const TABS = ['Details', 'Headroom', 'Faults', 'LCT', 'Demand', 'Forecast', 'Quality'];
+
+export default function SubstationSidebar({ substation, onClose, onAskChatbot, lvCountInEsa, forecastData }) {
   const [activeTab, setActiveTab] = useState('Details');
 
   if (!substation) return null;
@@ -768,7 +869,8 @@ export default function SubstationSidebar({ substation, onClose, onAskChatbot, l
         {activeTab === 'Headroom' && <HeadroomTab     sub={substation} />}
         {activeTab === 'Faults'   && <FaultsTab       sub={substation} />}
         {activeTab === 'LCT'      && <LCTTab          sub={substation} />}
-        {activeTab === 'Demand'   && <DemandTab       sub={substation} />}
+        {activeTab === 'Demand'   && <DemandTab        sub={substation} />}
+        {activeTab === 'Forecast' && <ForecastTab     sub={substation} forecastData={forecastData} />}
         {activeTab === 'Quality'  && <DataQualityTab  sub={substation} lvCountInEsa={lvCountInEsa} />}
       </div>
     </div>

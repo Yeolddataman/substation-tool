@@ -126,17 +126,27 @@ function HeadroomMarkers({ data, onSelect, selectedId }) {
 }
 
 // ── Primary substation boundary polygons ─────────────────────────────────
-function BoundaryLayer({ data, headroomData, onSelect }) {
+const FORECAST_RAG_COLOR = { Green: '#00E676', Yellow: '#FFD700', Red: '#FF4444' };
+
+function BoundaryLayer({ data, headroomData, onSelect, forecastData, forecastDay }) {
   // Build NRN → headroom record lookup
   const nrnMap = {};
   headroomData.forEach(s => { if (s.nrn) nrnMap[s.nrn] = s; });
 
   const style = useCallback((feature) => {
     const nrn = feature.properties?.PRIMARY_NRN_SPLIT;
+
+    // Forecast overlay — higher opacity, stronger border
+    if (forecastData?.primaries?.[nrn]) {
+      const dayData = forecastData.primaries[nrn].days[forecastDay ?? 0];
+      const fc = FORECAST_RAG_COLOR[dayData?.rag] || '#555';
+      return { fillColor: fc, fillOpacity: 0.30, color: fc, weight: 2, opacity: 0.8 };
+    }
+
     const sub = nrnMap[nrn];
     const fill = sub ? ragColor(sub.demandRAG) : '#555';
     return { fillColor: fill, fillOpacity: 0.15, color: fill, weight: 1, opacity: 0.5 };
-  }, [headroomData]);
+  }, [headroomData, forecastData, forecastDay]);
 
   const onEachFeature = useCallback((feature, layer) => {
     const nrn  = feature.properties?.PRIMARY_NRN_SPLIT;
@@ -159,9 +169,8 @@ function BoundaryLayer({ data, headroomData, onSelect }) {
     ));
   }, [headroomData]);
 
-  // Key includes headroom record count so the GeoJSON remounts (re-runs
-  // onEachFeature) when headroom data loads — prevents stale nrnMap closure.
-  const geoKey = `boundaries-${headroomData.length}`;
+  // Key remounts GeoJSON when headroom loads or forecast day changes (re-applies style)
+  const geoKey = `boundaries-${headroomData.length}-${forecastData ? forecastDay : 'none'}`;
   return <GeoJSON key={geoKey} data={data} style={style} onEachFeature={onEachFeature} />;
 }
 
@@ -212,7 +221,7 @@ function LayerControls({ layers, onToggle, counts }) {
 }
 
 // ── Main MapView ──────────────────────────────────────────────────────────
-export default function MapView({ onSelectSubstation, selectedSubstation, onLvCountChange }) {
+export default function MapView({ onSelectSubstation, selectedSubstation, onLvCountChange, forecastData, forecastDay }) {
   const [layers, setLayers]         = useState({ boundaries: false, headroom: false, lv: false });
   const [showFaults, setShowFaults] = useState(false);
   const [outageData, setOutageData] = useState([]);
@@ -288,7 +297,8 @@ export default function MapView({ onSelectSubstation, selectedSubstation, onLvCo
 
         {/* Primary boundary polygons — render as soon as GeoJSON is loaded (headroom optional) */}
         {layers.boundaries && boundaryData && (
-          <BoundaryLayer data={boundaryData} headroomData={headroomData || []} onSelect={onSelectSubstation} />
+          <BoundaryLayer data={boundaryData} headroomData={headroomData || []} onSelect={onSelectSubstation}
+            forecastData={forecastData} forecastDay={forecastDay} />
         )}
 
         {/* LV clustered layer — filtered to selected ESA when one is active */}

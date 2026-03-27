@@ -236,6 +236,7 @@ export default function OutagePanel({ showOnMap, onToggleMap, onOutagesLoaded, o
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [expanded, setExpanded]       = useState(false);
   const [locating, setLocating]       = useState(null);
+  const [showTimeline, setShowTimeline] = useState(false);
   const intervalRef                   = useRef(null);
 
   // ── Fetch ─────────────────────────────────────────────────────────────
@@ -327,6 +328,13 @@ export default function OutagePanel({ showOnMap, onToggleMap, onOutagesLoaded, o
             onClick={e => { e.stopPropagation(); setAutoRefresh(v => !v); }}>
             {autoRefresh ? '🟢 Auto' : '⏸ Auto'}
           </button>
+          {total > 0 && (
+            <button
+              className={`outage-map-btn ${showTimeline ? 'outage-map-btn--active' : ''}`}
+              onClick={e => { e.stopPropagation(); setShowTimeline(v => !v); }}>
+              📊 CML
+            </button>
+          )}
           <span className="outage-chevron">{expanded ? '▲' : '▼'}</span>
         </div>
       </div>
@@ -392,9 +400,6 @@ export default function OutagePanel({ showOnMap, onToggleMap, onOutagesLoaded, o
             <div className="outage-empty">No active faults for SEPD South England.</div>
           )}
 
-          {/* 24hr timeline */}
-          {total > 0 && <FaultTimeline outages={outages} />}
-
           <div className="outage-source">
             Source: robintw/sse_powercuts (SSEN live feed) · {lastUpdated
               ? `Updated ${lastUpdated.toLocaleTimeString('en-GB')}`
@@ -403,6 +408,9 @@ export default function OutagePanel({ showOnMap, onToggleMap, onOutagesLoaded, o
           </div>
         </div>
       )}
+
+      {/* ── CML Timeline (toggle independent of expand) ─────────────── */}
+      {showTimeline && total > 0 && <FaultTimeline outages={outages} />}
     </div>
   );
 }

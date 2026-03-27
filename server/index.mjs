@@ -17,7 +17,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { rateLimit } from 'express-rate-limit';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 const app  = express();
@@ -136,6 +136,142 @@ app.get('/api/health', (_req, res) =>
   res.json({ status: 'ok', ts: new Date().toISOString() })
 );
 
+// ── GET /api/fault-forecast ────────────────────────────────────────────────
+// 3-day fault risk RAG per primary substation.
+// Weather: Open-Meteo (free, no key). Risk model: weather score × historical
+// fault-rate vulnerability (from NAFIRS fault history / feeder count).
+// Cached server-side for 1 hour to avoid hammering Open-Meteo.
+
+// 12 weather zones covering SEPD South England (4 cols × 3 rows)
+const WEATHER_ZONES = [
+  { lat: 50.65, lng: -1.80 }, // 0  W Hampshire / Dorset
+  { lat: 50.65, lng: -0.75 }, // 1  C Hampshire / W Sussex
+  { lat: 50.65, lng:  0.25 }, // 2  E Sussex
+  { lat: 50.65, lng:  1.10 }, // 3  Kent coast
+  { lat: 51.10, lng: -1.80 }, // 4  Wiltshire / N Hampshire
+  { lat: 51.10, lng: -0.75 }, // 5  Surrey
+  { lat: 51.10, lng:  0.25 }, // 6  West Kent
+  { lat: 51.10, lng:  1.10 }, // 7  East Kent
+  { lat: 51.55, lng: -1.80 }, // 8  N Wiltshire / Berkshire
+  { lat: 51.55, lng: -0.75 }, // 9  Berkshire / N Surrey
+  { lat: 51.55, lng:  0.25 }, // 10 N Kent / Medway
+  { lat: 51.55, lng:  1.10 }, // 11 Thames Estuary
+];
+
+// Vulnerability: fault rate per feeder → percentile → multiplier [0.6–1.5]
+function buildVulnerabilityMap() {
+  const data = JSON.parse(
+    readFileSync(path.join(__dirname, '../public/headroom-substations.json'), 'utf8')
+  );
+  const primaries = data.filter(
+    s => s.type === 'Primary' && s.nrn && s.faultsByYear && Object.keys(s.faultsByYear).length > 0
+  );
+  const rates = primaries.map(s => {
+    const vals = Object.values(s.faultsByYear).map(Number).filter(v => !isNaN(v));
+    const avg  = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    return { nrn: s.nrn, lat: s.lat, lng: s.lng, rate: avg / Math.max(1, s.feederCount || 1) };
+  });
+  rates.sort((a, b) => a.rate - b.rate);
+  const map = {};
+  rates.forEach((r, i) => {
+    const pct  = i / rates.length;
+    const vuln = pct < 0.25 ? 0.60 : pct < 0.50 ? 0.85 : pct < 0.75 ? 1.15 : 1.50;
+    let minD = Infinity, zone = 0;
+    WEATHER_ZONES.forEach((z, zi) => {
+      const d = (z.lat - r.lat) ** 2 + (z.lng - r.lng) ** 2;
+      if (d < minD) { minD = d; zone = zi; }
+    });
+    map[r.nrn] = { vuln, zone };
+  });
+  return map;
+}
+
+// Weather risk factors — calibrated to UK overhead line fault drivers
+const gf = g => g < 40 ? 0 : g < 55 ? 0.20 : g < 70 ? 0.50 : g < 85 ? 0.80 : 1.0; // wind gusts km/h
+const rf = r => r < 5  ? 0 : r < 15 ? 0.15 : r < 30 ? 0.40 : 0.65;                 // rainfall mm/day
+const sf = s => s < 0.5? 0 : s < 2  ? 0.30 : s < 5  ? 0.60 : 1.0;                  // snowfall cm/day
+const tf = t => t > 30 ? 0.15 : t < -2 ? 0.20 : 0;                                  // temperature extremes
+const wScore = (g, r, s, t) =>
+  Math.min(1, gf(g) * 0.55 + rf(r) * 0.25 + sf(s) * 0.20 + tf(t) * 0.10);
+const toRAG = score => score < 0.20 ? 'Green' : score < 0.45 ? 'Yellow' : 'Red';
+
+let _forecastCache = null;
+let _forecastTime  = 0;
+let _vulnMap       = null;
+
+async function refreshForecast() {
+  if (!_vulnMap) _vulnMap = buildVulnerabilityMap();
+
+  const rawZoneData = await Promise.all(
+    WEATHER_ZONES.map(z =>
+      fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${z.lat}&longitude=${z.lng}` +
+        `&daily=wind_gusts_10m_max,precipitation_sum,snowfall_sum,temperature_2m_max` +
+        `&forecast_days=3&timezone=Europe%2FLondon`
+      )
+      .then(r => r.json())
+      .catch(() => null)
+    )
+  );
+
+  const validZone = rawZoneData.find(z => z?.daily?.time);
+  if (!validZone) {
+    const sample = JSON.stringify(rawZoneData[0]).slice(0, 200);
+    throw new Error(`Open-Meteo returned no usable data. Sample: ${sample}`);
+  }
+
+  const zoneData    = rawZoneData.map(z => (z?.daily?.time ? z : validZone));
+  const dates       = zoneData[0].daily.time;
+  const days        = dates.map((d, i) => ({
+    date:  d,
+    label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow'
+      : new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }),
+  }));
+  const zoneWeather = zoneData.map(z =>
+    z.daily.time.map((_, i) => ({
+      gust: z.daily.wind_gusts_10m_max[i] ?? 0,
+      rain: z.daily.precipitation_sum[i]  ?? 0,
+      snow: z.daily.snowfall_sum[i]        ?? 0,
+      tmax: z.daily.temperature_2m_max[i] ?? 15,
+    }))
+  );
+
+  const primaries = {};
+  for (const [nrn, { vuln, zone }] of Object.entries(_vulnMap)) {
+    primaries[nrn] = {
+      days: zoneWeather[zone].map(w => {
+        const ws    = wScore(w.gust, w.rain, w.snow, w.tmax);
+        const score = Math.round(Math.min(1, ws * vuln) * 100) / 100;
+        return {
+          rag:  toRAG(score),
+          score,
+          gust: Math.round(w.gust),
+          rain: Math.round(w.rain * 10) / 10,
+          snow: Math.round(w.snow * 10) / 10,
+          tmax: Math.round(w.tmax * 10) / 10,
+        };
+      }),
+      vuln: Math.round(vuln * 100) / 100,
+      zone,
+    };
+  }
+
+  _forecastCache = { generatedAt: new Date().toISOString(), days, primaries };
+  _forecastTime  = Date.now();
+  return _forecastCache;
+}
+
+app.get('/api/fault-forecast', requireAuth, async (_req, res) => {
+  try {
+    if (_forecastCache && Date.now() - _forecastTime < 60 * 60 * 1000) {
+      return res.json(_forecastCache);
+    }
+    res.json(await refreshForecast());
+  } catch (e) {
+    res.status(502).json({ error: `Forecast unavailable: ${e.message}` });
+  }
+});
+
 // ── Serve Vite production build ───────────────────────────────────────────
 // In development, Vite runs its own dev server and proxies /api here.
 // In production, Express serves the built frontend as static files.
@@ -152,6 +288,11 @@ if (existsSync(DIST)) {
 app.listen(PORT, () => {
   console.log(`\n⚡ SSEN Substation Tool`);
   console.log(`   API server  → http://localhost:${PORT}/api`);
+
+  // Warm forecast cache in the background so the first user request is instant
+  refreshForecast()
+    .then(() => console.log('   Forecast cache warmed ✓'))
+    .catch(e  => console.warn(`   Forecast warm-up failed (will retry on first request): ${e.message}`));
   if (existsSync(DIST)) {
     console.log(`   Frontend    → http://localhost:${PORT}`);
   } else {

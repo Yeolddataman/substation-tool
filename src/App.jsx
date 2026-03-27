@@ -5,6 +5,7 @@ import ChatBot from './components/ChatBot';
 import SafetyPanel from './components/SafetyPanel';
 import DataQualityPage from './components/DataQualityPage';
 import LoginScreen from './components/LoginScreen';
+import FaultForecastPanel from './components/FaultForecastPanel';
 import { getToken, clearToken } from './lib/auth';
 import './App.css';
 
@@ -15,8 +16,11 @@ export default function App() {
   const [safetyOpen, setSafetyOpen] = useState(false);
   const [chatInitMessage, setChatInitMessage] = useState('');
   const [chatInitImage, setChatInitImage] = useState(null);
-  const [lvCountInEsa, setLvCountInEsa] = useState(null);
-  const [dqOpen, setDqOpen]             = useState(false);
+  const [lvCountInEsa, setLvCountInEsa]   = useState(null);
+  const [dqOpen, setDqOpen]               = useState(false);
+  const [showForecast, setShowForecast]   = useState(false);
+  const [forecastData, setForecastData]   = useState(null);
+  const [forecastDay, setForecastDay]     = useState(0);
 
   const handleLogout = () => {
     clearToken();
@@ -66,6 +70,12 @@ export default function App() {
             </span>
           </div>
           <button
+            className={`btn btn-outline header-btn ${showForecast ? 'btn-active' : ''}`}
+            onClick={() => setShowForecast(v => !v)}
+          >
+            🌤 Fault Forecast
+          </button>
+          <button
             className={`btn btn-outline header-btn ${dqOpen ? 'btn-active' : ''}`}
             onClick={() => setDqOpen((v) => !v)}
           >
@@ -91,12 +101,21 @@ export default function App() {
       {/* Main layout */}
       <div className="app-body">
         {/* Map */}
-        <div className={`map-area ${selectedSubstation ? 'map-area--with-sidebar' : ''}`}>
+        <div className={`map-area ${selectedSubstation ? 'map-area--with-sidebar' : ''}`} style={{ position: 'relative' }}>
           <MapView
             onSelectSubstation={handleSelectSubstation}
             selectedSubstation={selectedSubstation}
             onLvCountChange={setLvCountInEsa}
+            forecastData={showForecast ? forecastData : null}
+            forecastDay={forecastDay}
           />
+          {showForecast && (
+            <FaultForecastPanel
+              onForecastLoaded={setForecastData}
+              onDayChange={setForecastDay}
+              selectedDay={forecastDay}
+            />
+          )}
         </div>
 
         {/* Substation Sidebar */}
@@ -106,6 +125,7 @@ export default function App() {
             onClose={() => setSelectedSubstation(null)}
             onAskChatbot={handleAskChatbot}
             lvCountInEsa={lvCountInEsa}
+            forecastData={forecastData}
           />
         )}
 
