@@ -20,6 +20,10 @@ dist-ssr
 # Raw source data — too large for git, not redistributable
 manual_data/
 
+# One-off extract outputs — contain live operational data, not for repo
+scripts/nerda-extract-results-*.json
+scripts/nerda-extract-summary-*.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

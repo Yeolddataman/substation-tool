@@ -45,36 +45,35 @@ function nerdaProxyHeaders(shortKey) {
   return { ...appAuthHeaders(), 'X-Nerda-Key': shortKey };
 }
 
-// Fetch substation by name — tries sds_site_id variants to avoid the
-// full-list endpoint which returns 500 (too much data to serve at once).
-async function fetchSubstationByName(subName, shortKey) {
-  const norm = normName(subName);
-  const cached = _substationCache.get(norm);
+// NERDA only supports ?substation={uuid} lookups — no name search, no bulk list.
+// UUIDs must be looked up from the NERDA portal URL and stored per-substation.
+const UUID_STORE_KEY = 'nerda_uuid_map'; // localStorage key: { subId → uuid }
+
+function getNerdaUuid(subId) {
+  try {
+    const map = JSON.parse(localStorage.getItem(UUID_STORE_KEY) || '{}');
+    return map[subId] || '';
+  } catch { return ''; }
+}
+function setNerdaUuid(subId, uuid) {
+  try {
+    const map = JSON.parse(localStorage.getItem(UUID_STORE_KEY) || '{}');
+    map[subId] = uuid;
+    localStorage.setItem(UUID_STORE_KEY, JSON.stringify(map));
+  } catch { /* ignore */ }
+}
+
+async function fetchSubstationByUuid(uuid, shortKey) {
+  const cached = _substationCache.get(uuid);
   if (cached && Date.now() - cached.ts < SUBSTATION_TTL) return cached.data;
-
-  // Try progressively shorter name variants in case NERDA uses a truncated id
-  const variants = [
-    norm,
-    subName.toUpperCase().trim(),
-    norm.replace(/[^A-Z0-9 ]/g, ''),  // alphanumeric only
-  ];
-
-  for (const v of variants) {
-    const r = await fetch(
-      `/api/nerda/substations?name=${encodeURIComponent(v)}`,
-      { headers: nerdaProxyHeaders(shortKey) }
-    );
-    if (r.ok) {
-      const data = await r.json();
-      // Check we actually got a station (not an empty result)
-      const station = Array.isArray(data) ? data[0] : data;
-      if (station?.lines || station?.sds_site_id) {
-        _substationCache.set(norm, { data: station, ts: Date.now() });
-        return station;
-      }
-    }
-  }
-  return null; // not found
+  const r = await fetch(
+    `/api/nerda/substations?uuid=${encodeURIComponent(uuid)}`,
+    { headers: nerdaProxyHeaders(shortKey) }
+  );
+  if (!r.ok) throw new Error(`NERDA ${r.status}`);
+  const data = await r.json();
+  _substationCache.set(uuid, { data, ts: Date.now() });
+  return data;
 }
 
 async function fetchTimeseries(measurementId, after, shortKey) {
@@ -97,38 +96,46 @@ async function fetchTimeseries(measurementId, after, shortKey) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-// NERDA static response structure (per API guide):
-//   { sds_site_id, latitude, longitude,
-//     lines: [{ line_name, nerda_line_uuid,
-//               measurements: [{ nerda_measurement_id, measurementType, unitSymbol, unitMultiplier }] }] }
+// Confirmed NERDA response structure (from live API, not doc):
+//   Array of:  { transformers: [{ tx_name, measurements: [{ nerda_measurement_id,
+//                 measurementType, unitSymbol, unitMultiplier }] }] }
 //
-// measurementType values seen: LineCurrent, ActivePower, ApparentPower, Voltage, ReactivePower
-const TYPE_LABEL = {
-  activepower:    { label: 'Active Power',    unit: 'MW'  },
-  realpower:      { label: 'Active Power',    unit: 'MW'  },
-  apparentpower:  { label: 'Apparent Power',  unit: 'MVA' },
-  reactivepower:  { label: 'Reactive Power',  unit: 'MVAr'},
-  linecurrent:    { label: 'Current',         unit: 'A'   },
-  current:        { label: 'Current',         unit: 'A'   },
-  voltage:        { label: 'Voltage',         unit: 'kV'  },
+// unitMultiplier: "M" = ×10⁶ (mega), "k" = ×10³ (kilo), "none" = raw
+// measurementType values: ThreePhaseActivePower, ThreePhaseReactivePower,
+//   LineCurrent, LineToLineVoltage, SwitchPosition (skip)
+
+const MULTIPLIER_SUFFIX = { M: 'M', k: 'k', none: '' };
+
+// Map measurementType (lowercase, no spaces) → display label + preferred unit
+const TYPE_META = {
+  threephaseactivepower:   { label: 'Active Power',    unit: 'MW',   mult: 'M' },
+  threephasereactivepower: { label: 'Reactive Power',  unit: 'MVAr', mult: 'M' },
+  linecurrent:             { label: 'Current',         unit: 'A',    mult: 'none' },
+  linetolinevoltage:       { label: 'Voltage',         unit: 'kV',   mult: 'k' },
+  activepowerdelta:        { label: 'Active Power',    unit: 'MW',   mult: 'M' },
 };
 
-// Priority order for display (show most useful metrics first)
-const TYPE_PRIORITY = ['activepower', 'apparentpower', 'linecurrent', 'voltage', 'reactivepower'];
+const TYPE_PRIORITY = [
+  'threephaseactivepower', 'linecurrent', 'linetolinevoltage', 'threephasereactivepower',
+];
 
 function pickMeasurements(detail) {
-  // Flatten all measurement objects from lines[]
+  // Flatten measurements from all transformers
   const all = [];
-  const substation = Array.isArray(detail) ? detail[0] : detail;
-  for (const line of substation?.lines || []) {
-    for (const m of line?.measurements || []) {
-      if (m.nerda_measurement_id) {
+  const items = Array.isArray(detail) ? detail : [detail];
+  for (const item of items) {
+    for (const tx of item?.transformers || []) {
+      for (const m of tx?.measurements || []) {
+        if (!m.nerda_measurement_id) continue;
+        const typeKey = (m.measurementType || '').toLowerCase().replace(/\s+/g, '');
+        if (typeKey === 'switchposition') continue; // not useful
         all.push({
-          id:   m.nerda_measurement_id,
-          type: (m.measurementType || '').toLowerCase().replace(/\s+/g, ''),
-          unit: m.unitSymbol || '',
-          name: m.measurementType || m.nerda_measurement_id,
-          line: line.line_name || '',
+          id:      m.nerda_measurement_id,
+          typeKey,
+          rawUnit: m.unitSymbol || '',
+          rawMult: m.unitMultiplier || 'none',
+          name:    m.measurementType || m.nerda_measurement_id,
+          tx:      tx.tx_name || '',
         });
       }
     }
@@ -139,22 +146,22 @@ function pickMeasurements(detail) {
   const picked = [];
   const usedTypes = new Set();
 
-  // Pick one measurement per type in priority order
   for (const typeKey of TYPE_PRIORITY) {
     if (picked.length >= 4) break;
     if (usedTypes.has(typeKey)) continue;
-    const m = all.find(x => x.type === typeKey || x.type.includes(typeKey));
-    if (m) {
-      const meta = TYPE_LABEL[typeKey] || { label: m.name, unit: m.unit };
-      picked.push({ id: m.id, label: meta.label, unit: m.unit || meta.unit, name: m.name, line: m.line });
-      usedTypes.add(typeKey);
-    }
+    const m = all.find(x => x.typeKey === typeKey || x.typeKey.includes(typeKey));
+    if (!m) continue;
+    const meta = TYPE_META[typeKey] || { label: m.name, unit: m.rawUnit, mult: m.rawMult };
+    // Derive display unit: prefer known mapping, else combine multiplier + symbol
+    const displayUnit = meta.unit || `${MULTIPLIER_SUFFIX[m.rawMult] ?? ''}${m.rawUnit}`;
+    picked.push({ id: m.id, label: meta.label, unit: displayUnit, name: m.name, line: m.tx });
+    usedTypes.add(typeKey);
   }
 
-  // Fallback: take first few if nothing matched
+  // Fallback: first 3 non-switch measurements
   if (picked.length === 0) {
     for (const m of all.slice(0, 3)) {
-      picked.push({ id: m.id, label: m.name, unit: m.unit, name: m.name, line: m.line });
+      picked.push({ id: m.id, label: m.name, unit: m.rawUnit, name: m.name, line: m.tx });
     }
   }
 
@@ -284,9 +291,49 @@ function KeyEntryPanel({ onKeySet }) {
   );
 }
 
+// ── UUID entry panel ─────────────────────────────────────────────────────────
+function UuidEntryPanel({ subId, onSet }) {
+  const [draft, setDraft] = useState('');
+  return (
+    <div style={{ fontSize: 11, color: '#8899aa', lineHeight: 1.6 }}>
+      <div style={{ marginBottom: 6 }}>
+        NERDA requires a <strong style={{ color: '#cdd' }}>substation UUID</strong> to look up data.
+        The full-list endpoint is unavailable — UUIDs must be copied from the portal.
+      </div>
+      <ol style={{ margin: '0 0 10px 16px', padding: 0, fontSize: 10, color: '#6a8299' }}>
+        <li>Log in at <span style={{ color: '#4FC3F7' }}>nerda.ssen.co.uk</span></li>
+        <li>Search for this substation and open it</li>
+        <li>Copy the UUID from the browser URL bar</li>
+        <li>Paste it below — saved for this substation</li>
+      </ol>
+      <input
+        type="text"
+        placeholder="e.g. 74f42299-9f8e-4cb4-922c-0e3273bff4c7"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        style={{
+          width: '100%', boxSizing: 'border-box',
+          padding: '6px 8px', borderRadius: 5,
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(0,188,212,0.3)',
+          color: '#cdd', fontSize: 11, fontFamily: 'monospace',
+          marginBottom: 6,
+        }}
+      />
+      <button
+        onClick={() => { const u = draft.trim(); if (u) { setNerdaUuid(subId, u); onSet(u); } }}
+        disabled={!draft.trim()}
+        style={{ ...CS.loadBtn, opacity: draft.trim() ? 1 : 0.4 }}
+      >
+        Save UUID &amp; fetch data
+      </button>
+    </div>
+  );
+}
+
 // ── Main tab component ──────────────────────────────────────────────────────
 export default function NerdaTab({ sub }) {
-  const [phase, setPhase]         = useState('idle');   // idle | need-key | searching | loading | ready | error | not-found
+  const [phase, setPhase]         = useState('idle');   // idle | need-key | need-uuid | searching | loading | ready | error | not-found
   const [nerdaUuid, setNerdaUuid] = useState(null);
   const [nerdaName, setNerdaName] = useState(null);
   const [measurements, setMeasurements] = useState([]);
@@ -306,30 +353,25 @@ export default function NerdaTab({ sub }) {
     setErrorMsg('');
   }, [sub?.id]);
 
-  const load = async () => {
+  const load = async (uuidOverride) => {
     if (!sub || sub.type !== 'Primary') return;
 
     const shortKey = getShortTermKey();
     if (!shortKey) { setPhase('need-key'); return; }
 
-    setPhase('searching');
+    const uuid = uuidOverride || getNerdaUuid(sub.id);
+    if (!uuid) { setPhase('need-uuid'); return; }
+
+    setNerdaUuid(uuid);
+    setPhase('loading');
     setErrorMsg('');
 
     try {
-      // Step 1: find substation by name directly (avoids full-list 500)
-      const station = await fetchSubstationByName(sub.name, shortKey);
+      // Fetch station detail by UUID — only supported NERDA lookup method
+      const stationData = await fetchSubstationByUuid(uuid, shortKey);
       if (!mountedRef.current) return;
 
-      if (!station) {
-        setPhase('not-found');
-        return;
-      }
-
-      setNerdaName(station.sds_site_id || sub.name);
-      setPhase('loading');
-
-      // Step 2: pick measurements from the same response (no second API call needed)
-      const picked = pickMeasurements(station);
+      const picked = pickMeasurements(stationData);
 
       if (picked.length === 0) {
         setPhase('ready');
@@ -403,24 +445,14 @@ export default function NerdaTab({ sub }) {
         <KeyEntryPanel onKeySet={() => { setPhase('idle'); load(); }} />
       )}
 
-      {phase === 'searching' && (
-        <div style={CS.status}>
-          <span style={{ color: '#FF9500' }}>⏳</span> Searching NERDA for {sub.name}…
-        </div>
+      {phase === 'need-uuid' && (
+        <UuidEntryPanel subId={sub.id} onSet={(uuid) => load(uuid)} />
       )}
 
       {phase === 'loading' && (
         <div style={CS.status}>
-          <span style={{ color: '#FF9500' }}>⏳</span> Loading measurements for <em>{nerdaName}</em>…
-        </div>
-      )}
-
-      {phase === 'not-found' && (
-        <div style={CS.status}>
-          <span style={{ color: '#FF4444' }}>✗</span> No NERDA match found for <em>{sub.name}</em>
-          <div style={{ fontSize: 10, color: '#3a5268', marginTop: 4 }}>
-            The substation may not be in NERDA's Phase 1 dataset, or the name differs from the mapped data.
-          </div>
+          <span style={{ color: '#FF9500' }}>⏳</span> Loading NERDA data…
+          <div style={{ fontSize: 9, color: '#3a5268', marginTop: 3 }}>UUID: {nerdaUuid}</div>
         </div>
       )}
 
@@ -433,9 +465,11 @@ export default function NerdaTab({ sub }) {
 
       {phase === 'ready' && (
         <>
-          <div style={{ fontSize: 10, color: '#5a7299', marginBottom: 10 }}>
-            NERDA: <span style={{ color: '#4FC3F7' }}>{nerdaName}</span>
-            &nbsp;· {timeLabel} · {measurements.reduce((n, m) => n + (m.points?.length || 0), 0)} readings
+          <div style={{ fontSize: 10, color: '#5a7299', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{timeLabel} · {measurements.reduce((n, m) => n + (m.points?.length || 0), 0)} readings</span>
+            <button onClick={() => { setNerdaUuid(null); setPhase('need-uuid'); }} style={{ ...CS.loadBtn, width: 'auto', padding: '2px 6px', fontSize: 9, opacity: 0.5 }}>
+              Change UUID
+            </button>
           </div>
 
           {measurements.length === 0 ? (
