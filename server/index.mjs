@@ -20,6 +20,7 @@ import { rateLimit } from 'express-rate-limit';
 import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { request as undiciRequest } from 'undici';
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -162,14 +163,20 @@ async function nerdaFetch(url) {
     console.log(`[NERDA] auth=${method} → ${status}  ${url.split('?')[0]}`);
 
   // 1. Long-term key: GET with JSON body  (per NERDA API guide §Authentication)
+  // Node.js fetch() disallows GET bodies (spec-compliant), so we use undici.request
+  // which has no such restriction.
   if (username && key) {
-    const r = await fetch(url, {
+    const { statusCode, body } = await undiciRequest(url, {
       method:  'GET',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body:    JSON.stringify({ username, apiKey: key }),
     });
-    log('get-json-body', r.status);
-    if (!AUTH_FAIL.has(r.status)) return r;
+    log('get-json-body', statusCode);
+    if (!AUTH_FAIL.has(statusCode)) {
+      // Wrap in a fetch-like object so the route handler can call .text()
+      const text = await body.text();
+      return { status: statusCode, ok: statusCode >= 200 && statusCode < 300, text: () => Promise.resolve(text) };
+    }
   }
 
   // 2. Bearer fallback (works for short-term/session keys from the portal)
