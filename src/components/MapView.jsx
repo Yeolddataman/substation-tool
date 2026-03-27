@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip, Marker, GeoJSON, useMap
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import OutagePanel, { FaultMapMarkers } from './OutagePanel';
+import { FaultMapMarkers } from './OutagePanel';
 import { substations, getVoltageColor, getStatusColor } from '../data/substations';
 
 // ── Exposes map.flyTo externally via a ref ─────────────────────────────────
@@ -221,12 +221,13 @@ function LayerControls({ layers, onToggle, counts }) {
 }
 
 // ── Main MapView ──────────────────────────────────────────────────────────
-export default function MapView({ onSelectSubstation, selectedSubstation, onLvCountChange, forecastData, forecastDay }) {
-  const [layers, setLayers]         = useState({ boundaries: false, headroom: false, lv: false });
-  const [showFaults, setShowFaults] = useState(false);
-  const [outageData, setOutageData] = useState([]);
+export default function MapView({ onSelectSubstation, selectedSubstation, onLvCountChange, forecastData, forecastDay, outageData = [], showFaultsOnMap = false, onFlyToReady }) {
+  const [layers, setLayers] = useState({ boundaries: false, headroom: false, lv: false });
   const flyToRef = useRef(null);
-  const handleLocate = useCallback((lat, lng) => { flyToRef.current?.(lat, lng); }, []);
+
+  useEffect(() => {
+    onFlyToReady?.((lat, lng) => flyToRef.current?.(lat, lng));
+  }, [onFlyToReady]);
   const [boundaryData, setBoundary] = useState(null);
   const [headroomData, setHeadroom] = useState(null);
   const [lvData, setLV]             = useState(null);
@@ -315,17 +316,11 @@ export default function MapView({ onSelectSubstation, selectedSubstation, onLvCo
         )}
 
         {/* Live fault map markers */}
-        <FaultMapMarkers outages={outageData} visible={showFaults} />
+        <FaultMapMarkers outages={outageData} visible={showFaultsOnMap} />
       </MapContainer>
 
       <Legend showLV={layers.lv} showBoundaries={layers.boundaries} showHeadroom={layers.headroom} />
       <LayerControls layers={layers} onToggle={toggleLayer} counts={counts} />
-      <OutagePanel
-        showOnMap={showFaults}
-        onToggleMap={() => setShowFaults(v => !v)}
-        onOutagesLoaded={setOutageData}
-        onLocate={handleLocate}
-      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 # UK Substation Mapping Tool
 ### SSEN South England Power Distribution (SEPD) — Proof of Concept v1
 
-A spatial intelligence platform for exploring the SSEN SEPD electricity network. Layers real open data across all voltage levels — 400kV Grid Supply Points down to individual 11kV/LV distribution transformers — with live fault overlays, network capacity headroom, DFES LCT projections, NAFIRS fault history, and an AI safety assistant powered by Anthropic Claude.
+A spatial intelligence platform for exploring the SSEN SEPD electricity network. Layers real open data across all voltage levels — 400kV Grid Supply Points down to individual 11kV/LV distribution transformers — with live fault overlays, fault risk forecasting, network capacity headroom, DFES LCT projections, NAFIRS fault history, and an AI safety assistant powered by Anthropic Claude.
 
 ---
 
@@ -29,13 +29,16 @@ A spatial intelligence platform for exploring the SSEN SEPD electricity network.
 | **Map engine** | React Leaflet v5 + Leaflet 1.9 · CartoDB Dark Matter basemap |
 | **Voltage levels** | 400/132kV GSP · 132kV BSP · 33/11kV Primary ESAs · 11/0.4kV LV |
 | **Substation count** | ~54,036 LV · 442 Primary ESA boundaries · ~50 GSP/BSP (all SEPD) |
-| **Live faults** | SSEN SEPD active outages · exact lat/lng · affected area polygon · customer impact |
+| **Live faults** | SSEN SEPD active outages · exact lat/lng · affected area polygon · customer impact · ETR |
+| **Fault risk forecast** | 3-day RAG forecast per primary substation — Open-Meteo weather × NAFIRS historical fault rate · map overlay |
+| **Fault history** | NAFIRS HV records 2015–2025 by year per primary substation (Recharts bar chart) |
+| **CML tracking** | Customer Minutes Lost ranking across active faults — restoration timeline with 24hr bar chart |
 | **Headroom data** | Demand & generation RAG per substation (SSEN March 2026) |
 | **LCT projections** | DFES 2025: EVs, heat pumps, solar PV, battery storage by ESA — three scenarios |
-| **Fault history** | NAFIRS HV records by year per primary substation (Recharts bar chart) |
 | **Satellite imagery** | ArcGIS World Imagery minimap + Google Maps Street View link per substation |
 | **AI assistant** | Anthropic Claude (image recognition · UK safety standards context · Insight Mode) |
 | **Safety reference** | EaWR 1989, ENA Safety Rules, BS EN 50110, HSG85, CDM 2015 and others |
+| **Authentication** | JWT-based login · bcrypt password hashing · rate-limited login and AI endpoints |
 
 ---
 
@@ -43,30 +46,37 @@ A spatial intelligence platform for exploring the SSEN SEPD electricity network.
 
 ```
 src/
-├── App.jsx                     Root layout, global state (selected substation, panels)
-├── App.css                     All styling — dark theme, all component styles (~1,500 lines)
+├── App.jsx                     Root layout, global state (selected substation, panels, outage data)
+├── App.css                     All styling — dark theme, all component styles (~1,700 lines)
 ├── main.jsx                    Vite entry point
 ├── components/
-│   ├── MapView.jsx             Map container, layer management, fault markers
-│   ├── SubstationSidebar.jsx   4-tab details panel (Details / Headroom / Faults / LCT)
-│   ├── OutagePanel.jsx         Live faults bar (bottom-centre) + FaultMapMarkers export
+│   ├── MapView.jsx             Map container, layer management, fault map markers
+│   ├── SubstationSidebar.jsx   5-tab details panel (Details / Headroom / LCT / Demand / Quality)
+│   ├── OutagePanel.jsx         Named exports only: FaultMapMarkers + FaultTimeline
+│   ├── FaultsPanel.jsx         Left-side drawer — 4 tabs: Live / CML / History / Forecast
 │   ├── ChatBot.jsx             Network Intelligence Assistant (Anthropic API)
-│   └── SafetyPanel.jsx         UK safety standards reference drawer
-└── data/
-    ├── substations.js          Static GSP definitions + voltage/status colour helpers
-    └── safetyStandards.js      UK electrical safety standards dataset + AI system prompt
+│   ├── SafetyPanel.jsx         UK safety standards reference drawer
+│   ├── DataQualityPage.jsx     Data quality full-page overlay
+│   └── LoginScreen.jsx         Authentication screen + data attribution
+└── lib/
+    ├── auth.js                 JWT token storage + retrieval helpers
+    └── forecast.js             Client-side 1-hour cache for fault forecast data
 
 public/                         Static assets — served directly by Vite, fetched lazily
-├── headroom-substations.json   Processed SSEN headroom (~1,100 SEPD substations)
+├── headroom-substations.json   Processed SSEN headroom (~1,100 SEPD substations with NAFIRS fault counts)
 ├── sepd-primary-boundaries.geojson   442 Primary ESA polygons (simplified)
 ├── ssen-lv-substations.json    ~54k LV substation points (compacted, processed)
 ├── dfes-by-primary.json        DFES 2025 LCT projections keyed by normalised primary name
 └── dfes-licence.json           DFES 2025 SEPD licence-level totals
 
+server/
+└── index.mjs                   Express backend — JWT auth, Anthropic API proxy, fault forecast API
+
 scripts/                        Node.js one-off data processors (run to rebuild public/ files)
 ├── process-ssen.mjs            Reads SSEN CSV → deduplicates → BNG→WGS84 → LV JSON
 ├── process-dfes.cjs            Reads DFES xlsx → dfes-by-primary.json + dfes-licence.json
 ├── simplify-geojson.mjs        Douglas-Peucker simplification of ESA polygon GeoJSON
+├── setup-credentials.mjs       Interactive credential setup — generates bcrypt hash + JWT secret
 └── read-dfes-v2.cjs            DFES v2 xlsx inspector/reader
 
 manual_data/                    Raw source files (not committed — place here before processing)
@@ -77,13 +87,13 @@ manual_data/                    Raw source files (not committed — place here b
 └── ssen-dfes-2025-results-by-licence-area-and-esav2.xlsx
 ```
 
-**State flow:** `App.jsx` owns `selectedSubstation` and panel open/close state. `MapView.jsx` owns all layer toggle state, fetched data references, and outage data. The sidebar reads `selectedSubstation` only — it never writes to the map. A `flyToRef` populated by a `MapController` child component lets `OutagePanel` trigger animated map pans from outside the MapContainer context.
+**State flow:** `App.jsx` owns `selectedSubstation`, panel open/close state, `outageData`, `showFaultsOnMap`, `forecastData`, `forecastDay`, and `forecastOverlayActive`. `MapView.jsx` owns all layer toggle state and fetched GeoJSON/headroom/LV data. The sidebar reads `selectedSubstation` only — it never writes to the map. A `flyToRef` callback wired through `onFlyToReady` lets `FaultsPanel` trigger animated map pans from outside the MapContainer context.
 
 ---
 
 ## Data Sources
 
-All datasets are open licence. No API key required for map data.
+All datasets are open licence. No API key required for map or weather data.
 
 | Dataset | Source | Licence |
 |---|---|---|
@@ -93,6 +103,7 @@ All datasets are open licence. No API key required for map data.
 | NAFIRS HV fault records | SSEN Open Data | CC BY 4.0 |
 | DFES 2025 LCT projections | SSEN Distribution Future Energy Scenarios | CC BY 4.0 |
 | Live outages | [robintw/sse_powercuts](https://github.com/robintw/sse_powercuts) — mirrors SSEN live feed | Public |
+| Weather forecast (fault risk model) | [Open-Meteo](https://open-meteo.com) — free, no key required | CC BY 4.0 |
 | Basemap tiles | CartoDB Dark Matter | CC BY 3.0 |
 | Satellite imagery (minimap) | ArcGIS World Imagery | Esri Terms |
 
@@ -114,19 +125,23 @@ Ten named Grid Supply Points from `src/data/substations.js` rendered as `CircleM
 
 | Toggle | Data file | Rendered as |
 |---|---|---|
-| **🗺 Primary Boundaries** | `sepd-primary-boundaries.geojson` | GeoJSON `<Polygon>` — grey fill if no headroom loaded; RAG-coloured fill once headroom enabled |
+| **🗺 Primary Boundaries** | `sepd-primary-boundaries.geojson` | GeoJSON `<Polygon>` — grey fill if no headroom loaded; demand RAG-coloured once headroom enabled; fault risk RAG-coloured when forecast overlay is active |
 | **📊 Headroom Markers** | `headroom-substations.json` | `CircleMarker` for GSPs and BSPs only. Primary level shown via shapefile only. |
 | **⚡ LV Substations** | `ssen-lv-substations.json` | `MarkerClusterGroup` — ~54k points clustered, chunks loaded to avoid thread blocking |
 
-### Live Faults (OutagePanel toggle)
+### Live Faults (FaultsPanel)
 
-Fetched from `robintw/sse_powercuts` on GitHub. Filtered to `networkId === 'com.sse.ssepd.sepd'` and `resolved === false` (SEPD only — SHEPD Scotland excluded). Each active fault renders:
+Opened via the **⚡ Faults** header button. Fetched from `robintw/sse_powercuts` on GitHub. Filtered to `networkId === 'com.sse.ssepd.sepd'` and `resolved === false` (SEPD only — SHEPD Scotland excluded). Each active fault renders:
 
 - **SVG warning triangle** — orange (HV), yellow (LV), purple (PSI) — `L.divIcon` with inline SVG `<polygon>` and `⚡` glyph. Visually distinct from all circular substation markers.
 - **GeoJSON dashed polygon** — translucent fill of the affected area from the `location` field.
 - **Popup on click** — reference, name, type, customer count, network type, logged time (elapsed), ETR, engineer ETA, affected postcodes, status message.
 
-Clicking a fault row in the panel calls `flyToRef.current(lat, lng, 14)` to animate the map to that location.
+Clicking a fault row in the panel calls the `onLocate` flyTo callback to animate the map to that location.
+
+### Fault Risk Forecast Overlay
+
+Enabled via the toggle in the FaultsPanel Forecast tab. When active, primary ESA polygon fills are overridden with forecast RAG colours: Green (`#00E676`), Yellow (`#FFD700`), Red (`#FF4444`). Day selector allows switching between Today / Tomorrow / Day 3. The `BoundaryLayer` component detects the presence of `forecastData` and applies forecast styles over demand RAG styles.
 
 ---
 
@@ -134,11 +149,11 @@ Clicking a fault row in the panel calls `flyToRef.current(lat, lng, 14)` to anim
 
 ### MapView.jsx
 
-Owns all layer state and fetched data. Key sub-components:
+Owns all layer state and fetched GeoJSON/headroom/LV data. Receives `outageData`, `showFaultsOnMap`, `forecastData`, `forecastDay`, and `onFlyToReady` from `App.jsx`. Key sub-components:
 
-**`MapController`** — zero-render child inside `MapContainer`. Uses `useMap()` to write `map.flyTo(lat, lng, zoom)` into `flyToRef.current`. This is the only way to trigger map pans from outside the MapContainer React context without prop-drilling through Leaflet's internal context.
+**`MapController`** — zero-render child inside `MapContainer`. Uses `useMap()` to write `map.flyTo(lat, lng, zoom)` into `flyToRef.current`. This is the only way to trigger map pans from outside the MapContainer React context without prop-drilling through Leaflet's internal context. Exposed to the parent via `onFlyToReady` callback.
 
-**`BoundaryLayer`** — renders the 442 primary ESA polygons. Builds an NRN lookup map from `headroomData` records. The `key` prop is `boundaries-${headroomData.length}` so the GeoJSON remounts when headroom data loads, re-running `onEachFeature` with a populated NRN map and updating both RAG fill colours and click handlers. Click is always registered regardless of headroom state — falls back to feature properties (`PRIMARY_NAME_2025`, `PRIMARY_NRN_SPLIT`, `GSP_NAME`, `BSP_NAME`, `PRIMARY_VOLTAGE_STEP`) when no headroom record matches.
+**`BoundaryLayer`** — renders the 442 primary ESA polygons. Builds an NRN lookup map from `headroomData` records. The `key` prop is `boundaries-${headroomData.length}-${forecastData ? forecastDay : 'none'}` so the GeoJSON remounts when headroom loads or forecast day changes, re-running `onEachFeature` and `style` with updated data. Click is always registered — falls back to `feature.properties` when no headroom record matches. When `forecastData` is present, polygon fill colours are overridden by the forecast RAG for that primary.
 
 **`HeadroomMarkers`** — filters to GSP and BSP types only. Primary substations are intentionally excluded here (shown via shapefile instead).
 
@@ -148,39 +163,65 @@ Owns all layer state and fetched data. Key sub-components:
 
 ### OutagePanel.jsx
 
-Dual-purpose component exported as two named symbols:
+Named exports only (no default export):
 
-- **`default OutagePanel`** — the collapsible bottom-centre bar. Shows HV/LV count badges, customer tally, per-fault rows with click-to-locate.
-- **`export FaultMapMarkers`** — rendered inside `MapContainer` in MapView. Receives `outages` and `visible` props from MapView state. Renders markers and polygons inside the Leaflet context.
+- **`FaultMapMarkers`** — rendered inside `MapContainer` in MapView. Receives `outages` and `visible` props passed down from App state. Renders SVG warning-triangle markers and dashed affected-area polygons inside the Leaflet context.
+- **`FaultTimeline`** — 24-hour restoration timeline sorted by CML (Customer Minutes Lost = customers × minutes to ETR). Rendered in the FaultsPanel CML tab.
 
-Fetch uses a `?t=Date.now()` cache-bust querystring to bypass GitHub CDN caching on manual refresh. Auto-refresh uses a 60-second `setInterval` cleared on component unmount.
+### FaultsPanel.jsx
+
+Left-side slide-in drawer, opened via **⚡ Faults** in the header. Four tabs:
+
+| Tab | Content |
+|---|---|
+| **Live** | Fault fetch controls (refresh / auto-refresh / map toggle), HV/LV/PSI count badges, per-fault rows with CML, ETR, click-to-locate |
+| **CML** | `FaultTimeline` — 24hr bar chart of active faults sorted by Customer Minutes Lost, total CML summary |
+| **History** | NAFIRS HV fault history bar chart (Recharts `BarChart`) per year for the selected primary substation |
+| **Forecast** | 3-day ahead fault risk RAG cards per primary — day selector, map overlay toggle, weather breakdown |
+
+Forecast data is fetched lazily on first tab open via `fetchForecast()` (client-side 1-hour cache). Outage data is fetched on panel open and optionally auto-refreshed every 60 seconds.
 
 ### SubstationSidebar.jsx
 
-Four-tab panel. Tab content is lazy-loaded where relevant:
+Five-tab panel opened when a substation or primary ESA is selected on the map:
 
 | Tab | Content |
 |---|---|
 | **Details** | Asset metadata, ArcGIS satellite minimap, Google Street View link, photo upload + AI analysis trigger |
-| **Headroom** | Demand/generation RAG badges with coloured backgrounds, utilisation bar, fault level, reinforcement notes |
-| **Faults** | NAFIRS HV fault history bar chart (Recharts `BarChart`) grouped by year per primary NRN |
+| **Headroom** | Demand/generation RAG badges, utilisation bar, fault level, reinforcement notes |
 | **LCT** | DFES 2025 line charts (EE/HT/FB scenarios) for EVs, heat pumps, solar PV, battery; summary table |
+| **Demand** | Secondary substation demand rankings within the ESA |
+| **Quality** | LV substation count within ESA boundary, data completeness indicators |
 
 DFES data is loaded once via a module-level cache (`_dfesCache`) shared across all sidebar instances. Primary name matching normalises names by stripping suffixes (`PRIMARY`, `GSP`, `BSP`, `SUBSTATION`) before lookup.
 
-Sidebar header condenses name, type, operator and status into 3 lines with inline badges to maximise vertical space for content tabs.
+### server/index.mjs
+
+Express backend serving the built Vite frontend and proxying AI requests. Endpoints:
+
+| Endpoint | Auth | Description |
+|---|---|---|
+| `POST /api/auth/login` | None (rate limited 10/hr) | Validates credentials, returns signed JWT (8h expiry) |
+| `POST /api/chat` | JWT required | Proxies to Anthropic API — caller supplies own key via `X-Anthropic-Key` header |
+| `GET /api/fault-forecast` | JWT required | Returns 3-day fault risk RAG per primary — 1-hour server-side cache |
+| `GET /api/health` | None | Health check |
+
+**Fault forecast model:**
+1. `buildVulnerabilityMap()` reads `public/headroom-substations.json` and computes average annual fault rate per feeder for each primary. Sorts into percentile bands → vulnerability multiplier: bottom 25% = 0.60×, 25–50% = 0.85×, 50–75% = 1.15×, top 25% = 1.50×. Each primary is assigned to the nearest of 12 weather zones covering SEPD.
+2. Open-Meteo fetches wind gusts, precipitation, snowfall, max temperature for 3 days ahead across all 12 zones (12 HTTP requests per refresh).
+3. Weather risk score: `gusts×0.55 + rain×0.25 + snow×0.20 + temp_extreme×0.10`, capped at 1.0.
+4. Final score = weather score × vulnerability multiplier. RAG thresholds: Green < 0.20, Yellow 0.20–0.45, Red ≥ 0.45.
+5. Cache warmed on startup; refreshed hourly on demand.
 
 ### ChatBot.jsx — Network Intelligence Assistant
 
-Anthropic Claude API only (`claude-sonnet-4-6`). Configured via `VITE_ANTHROPIC_API_KEY`. Groq and local Ollama were considered and removed — only Anthropic is supported.
+Anthropic Claude API only (`claude-sonnet-4-6`). Calls proxied through `POST /api/chat` — API key supplied by user via UI, forwarded in `X-Anthropic-Key` header, never stored server-side.
 
 **Standard mode** — answers using embedded UK safety standards context from `safetyStandards.js`.
 
 **Insight Mode** — injects the selected substation's live data into the system prompt: voltage, utilisation %, headroom MVA, demand/generation RAG, fault history statistics, active constraints and reinforcement works. Enables dataset-aware Q&A without the user having to copy/paste values.
 
 **Image recognition** — files are `FileReader` base64-encoded and sent as `image_url` content blocks. Default analysis prompt references the substation's voltage and operator for contextualised hazard identification.
-
-Triggered contextually from the sidebar "Ask Safety Assistant" button with a pre-populated question.
 
 ---
 
@@ -205,6 +246,8 @@ Triggered contextually from the sidebar "Ask Safety Assistant" button with a pre
 ### Headroom Data
 
 **Input:** `manual_data/headroom-dashboard-data-march-2026.csv` — 1,139 rows covering GSP, BSP and Primary level for SEPD.
+
+**NAFIRS join:** `20260324_nafirs_hv_sepd_csv.csv` — 38,551 HV fault records. Grouped by `NRN (South)` field (4-digit prefix), counting faults per year 2015–2025. These per-year counts (`faultsByYear`) and total feeder count (`feederCount`) are embedded into each primary's headroom record for use by the fault risk model and NAFIRS history chart.
 
 **NRN join key (discovered):** `PRIMARY_NRN_SPLIT` in the GeoJSON (4-digit prefix e.g. `1234`) matches the first 4 characters of the `NRN (South)` field in NAFIRS fault records. 438 of 442 primaries matched (99.1%).
 
@@ -232,9 +275,7 @@ Triggered contextually from the sidebar "Ask Safety Assistant" button with a pre
 
 ## AI Assistant
 
-**Provider:** Anthropic Claude API only (`claude-sonnet-4-6`). Direct browser-to-API call using `anthropic-dangerous-direct-browser-access: true` header and `x-api-key` authentication.
-
-**API key:** Set `VITE_ANTHROPIC_API_KEY=sk-ant-...` in `.env`. Note: Claude.ai web subscription tokens are separate from API billing — a paid API account at console.anthropic.com is required.
+**Provider:** Anthropic Claude API only (`claude-sonnet-4-6`). Requests are proxied through the Express backend (`POST /api/chat`) — the API key is supplied by the user in the chat UI, forwarded in the `X-Anthropic-Key` header, and never stored or logged server-side.
 
 **System prompt** (standard mode) includes full text of:
 - Electricity at Work Regulations 1989 key regulations
@@ -286,6 +327,10 @@ Primary substations are shown exclusively as ESA boundary polygons. Showing both
 
 Boundaries show immediately on toggle, rendering grey polygons if headroom isn't loaded. This allows spatial exploration of service areas before committing to loading headroom data. When headroom later loads, the `key={boundaries-${headroomData.length}}` forces GeoJSON remount so `onEachFeature` re-fires with the populated NRN map — polygons recolour and click handlers update to include headroom records without requiring a user action.
 
+### Faults Panel — Consolidated Drawer
+
+All fault-related content (live faults, CML timeline, NAFIRS history, forecast) is consolidated into a single left-side `FaultsPanel` drawer rather than scattered across the bottom bar, map overlays and sidebar tabs. This reduces UI clutter and allows fault context to persist while the right-side substation sidebar is open.
+
 ### Outage Data Source — GitHub Mirror vs SSEN Direct API
 
 The SSEN direct API (`external.distribution.prd.ssen.co.uk/opendataportal-prd/v4/api/getalloutages`) was initially used. It returned records but had empty postcode fields, making individual fault location impossible without a geocoding step. Replaced with `robintw/sse_powercuts` which mirrors the same SSEN live feed as structured JSON including `latitude`, `longitude`, GeoJSON `location` polygon and `affectedAreas` postcode list — no geocoding required.
@@ -298,12 +343,17 @@ The SSEN direct API (`external.distribution.prd.ssen.co.uk/opendataportal-prd/v4
 - Live faults: `SEPD_NETWORK` constant in OutagePanel
 - No toggle exists to show SHEPD faults
 
+### Fault Risk Model — Weather Zones vs Per-Substation Fetch
+
+Fetching weather for each of 454 primaries individually would mean 454 Open-Meteo API calls per hourly refresh — wasteful and slow. Instead, 12 weather zones cover the entire SEPD footprint (4 columns × 3 rows at 0.5° resolution). Each primary is assigned to its nearest zone by Euclidean distance in lat/lng space. This reduces weather fetches to 12 per refresh while keeping geographic granularity well within the spatial variance of UK weather systems (~50km zone diameter vs typical frontal scales of hundreds of km).
+
 ### z-index Strategy
 
 | Element | z-index |
 |---|---|
 | Leaflet internal panes | 200–700 |
-| Layer controls, legend, outage panel | 1000 |
+| Layer controls, legend | 1000 |
+| FaultsPanel, SafetyPanel | 99 (flex siblings, no z-index needed) |
 | Substation sidebar | fixed, out-of-flow |
 | Chatbot panel | 8900 |
 | Chatbot toggle button | 9000 |
@@ -385,23 +435,37 @@ Chatbot was raised to 8900/9000 after being found behind the layer control butto
 
 ---
 
+### Fault forecast: "Cannot read properties of undefined (reading 'time')"
+**Symptom:** `/api/fault-forecast` returned 502 with this error on first request.
+**Root cause:** Open-Meteo returned an error response object (no `daily` field) for one or more weather zones — typically due to transient network or rate-limit conditions. The code attempted `.daily.time` on the error object.
+**Fix:** Added `.catch(() => null)` to each zone fetch. After all fetches resolve, find the first zone with valid `daily.time` data. If none exist, throw a descriptive error with a sample of the response. Replace any null zones with the nearest valid zone's data so partial failures degrade gracefully.
+
+---
+
 ## Development Setup
 
 ### Prerequisites
 - Node.js 18+
 - An Anthropic API key from [console.anthropic.com](https://console.anthropic.com) (separate from Claude.ai web subscription)
 
-### Install and Run
+### Install and Run (Development)
+
 ```bash
 cd substation-tool
 npm install
 
-# Create .env file with your Anthropic key
-echo "VITE_ANTHROPIC_API_KEY=sk-ant-..." > .env
+# Set up authentication credentials (interactive — generates bcrypt hash + JWT secret)
+npm run setup-creds
 
+# Start the backend API server (port 3001)
+npm run dev:server
+
+# In a second terminal, start the Vite frontend dev server (port 5173)
 npm run dev
 # → http://localhost:5173
 ```
+
+The Vite dev server proxies `/api` requests to `localhost:3001` automatically.
 
 ### Rebuild Processed Data (only needed when source data changes)
 ```bash
@@ -417,16 +481,22 @@ node scripts/simplify-geojson.mjs
 
 All output goes to `public/` and is served statically by Vite.
 
-### Build for Production
+### Build and Run for Production
+
 ```bash
 npm run build    # → dist/
-npm run preview  # preview production build on http://localhost:4173
+npm run server   # serves dist/ + API on :3001
 ```
 
 ### Environment Variables
+
 | Variable | Required | Description |
 |---|---|---|
-| `VITE_ANTHROPIC_API_KEY` | Yes (AI features) | Anthropic API key for Claude |
+| `AUTH_USERNAME` | Yes | Login username |
+| `AUTH_PASSWORD_HASH` | Yes | bcrypt hash of the login password — generated by `npm run setup-creds` |
+| `JWT_SECRET` | Yes | 48-byte hex secret for signing JWT tokens — generated by `npm run setup-creds` |
+
+All variables are read from `.env` at server startup. Run `npm run setup-creds` to generate them interactively.
 
 ---
 
@@ -435,24 +505,32 @@ npm run preview  # preview production build on http://localhost:4173
 ```
 substation-tool/
 ├── .env                                    Local env vars (not committed)
-├── vite.config.js                          Vite config
+├── vite.config.js                          Vite config — dev proxy /api → :3001
 ├── package.json
 ├── index.html
 ├── src/
-│   ├── App.jsx                             Root — layout, global state
-│   ├── App.css                             All styles (~1,500 lines)
+│   ├── App.jsx                             Root — layout, global state (~170 lines)
+│   ├── App.css                             All styles (~1,700 lines)
 │   ├── main.jsx
 │   ├── components/
-│   │   ├── MapView.jsx                     Map + all layer logic (~280 lines)
-│   │   ├── SubstationSidebar.jsx           4-tab detail panel (~530 lines)
-│   │   ├── OutagePanel.jsx                 Live faults bar + map markers (~310 lines)
+│   │   ├── MapView.jsx                     Map + all layer logic (~330 lines)
+│   │   ├── SubstationSidebar.jsx           5-tab detail panel (~750 lines)
+│   │   ├── OutagePanel.jsx                 FaultMapMarkers + FaultTimeline exports (~230 lines)
+│   │   ├── FaultsPanel.jsx                 Left-side faults drawer, 4 tabs (~270 lines)
 │   │   ├── ChatBot.jsx                     AI assistant (~300 lines)
-│   │   └── SafetyPanel.jsx                 Safety standards reference drawer
+│   │   ├── SafetyPanel.jsx                 Safety standards reference drawer
+│   │   ├── DataQualityPage.jsx             Data quality full-page overlay
+│   │   └── LoginScreen.jsx                 Login form + data attribution
+│   ├── lib/
+│   │   ├── auth.js                         JWT token helpers (get/set/clear)
+│   │   └── forecast.js                     Forecast fetch with 1-hour client cache
 │   └── data/
 │       ├── substations.js                  10 static GSPs + colour helpers
 │       └── safetyStandards.js              7 UK safety standards + AI system prompt
+├── server/
+│   └── index.mjs                           Express backend — auth, AI proxy, forecast API (~300 lines)
 ├── public/
-│   ├── headroom-substations.json           ~1,100 SEPD substations with headroom data
+│   ├── headroom-substations.json           ~1,100 SEPD substations with headroom + NAFIRS data
 │   ├── sepd-primary-boundaries.geojson     442 primary ESA polygons (simplified)
 │   ├── ssen-lv-substations.json            ~54k LV substation points
 │   ├── dfes-by-primary.json                DFES 2025 projections by ESA
@@ -461,6 +539,7 @@ substation-tool/
 │   ├── process-ssen.mjs
 │   ├── process-dfes.cjs
 │   ├── simplify-geojson.mjs
+│   ├── setup-credentials.mjs
 │   └── read-dfes-v2.cjs
 └── manual_data/                            Raw source files (not committed)
     ├── 20260323_substation_locations_csv.csv
@@ -485,6 +564,7 @@ substation-tool/
 | SSEN NAFIRS fault records | © SSEN NAFIRS HV SEPD (CC BY 4.0) |
 | SSEN DFES 2025 | © SSEN Distribution Future Energy Scenarios 2025 (CC BY 4.0) |
 | Live outages | robintw/sse_powercuts — mirrors SSEN open data feed |
+| Weather forecast | © Open-Meteo contributors (CC BY 4.0) — open-meteo.com |
 | Basemap | © CARTO · © OpenStreetMap contributors (CC BY 3.0) |
 | Satellite imagery | © Esri, Maxar, Earthstar Geographics |
 

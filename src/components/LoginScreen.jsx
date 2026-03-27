@@ -203,6 +203,13 @@ const DATA_SOURCES = [
         attribution: null,
         note: 'Filtered to SEPD network (com.sse.ssepd.sepd). Provides lat/lng, affected area polygons, customer counts and ETR. Updated near-real-time.',
       },
+      {
+        name: 'Weather Forecast — Fault Risk Model',
+        provider: 'Open-Meteo API — open-meteo.com',
+        licence: 'CC BY 4.0',
+        attribution: '© Open-Meteo contributors',
+        note: '3-day ahead wind gust, precipitation, snowfall and temperature forecast across 12 weather zones covering SEPD. Used to compute fault risk RAG per primary substation. Cached server-side for 1 hour. No API key required.',
+      },
     ],
   },
   {

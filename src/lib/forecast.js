@@ -19,7 +19,3 @@ export async function fetchForecast() {
   return _cache;
 }
 
-export function clearForecastCache() {
-  _cache     = null;
-  _cacheTime = 0;
-}

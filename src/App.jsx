@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import MapView from './components/MapView';
 import SubstationSidebar from './components/SubstationSidebar';
 import ChatBot from './components/ChatBot';
 import SafetyPanel from './components/SafetyPanel';
+import FaultsPanel from './components/FaultsPanel';
 import DataQualityPage from './components/DataQualityPage';
 import LoginScreen from './components/LoginScreen';
-import FaultForecastPanel from './components/FaultForecastPanel';
 import { getToken, clearToken } from './lib/auth';
 import './App.css';
 
@@ -14,13 +14,21 @@ export default function App() {
   const [selectedSubstation, setSelectedSubstation] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [safetyOpen, setSafetyOpen] = useState(false);
+  const [faultsPanelOpen, setFaultsPanelOpen] = useState(false);
   const [chatInitMessage, setChatInitMessage] = useState('');
   const [chatInitImage, setChatInitImage] = useState(null);
-  const [lvCountInEsa, setLvCountInEsa]   = useState(null);
-  const [dqOpen, setDqOpen]               = useState(false);
-  const [showForecast, setShowForecast]   = useState(false);
-  const [forecastData, setForecastData]   = useState(null);
-  const [forecastDay, setForecastDay]     = useState(0);
+  const [lvCountInEsa, setLvCountInEsa]     = useState(null);
+  const [dqOpen, setDqOpen]                 = useState(false);
+  const [outageData, setOutageData]         = useState([]);
+  const [showFaultsOnMap, setShowFaultsOnMap] = useState(false);
+  const [forecastData, setForecastData]     = useState(null);
+  const [forecastDay, setForecastDay]       = useState(0);
+  const [forecastOverlayActive, setForecastOverlayActive] = useState(false);
+
+  // flyTo bridge: FaultsPanel calls flyTo → MapView pans the map
+  const flyToFnRef = useRef(null);
+  const handleFlyToReady = useCallback((fn) => { flyToFnRef.current = fn; }, []);
+  const handleLocate = useCallback((lat, lng) => { flyToFnRef.current?.(lat, lng); }, []);
 
   const handleLogout = () => {
     clearToken();
@@ -70,10 +78,10 @@ export default function App() {
             </span>
           </div>
           <button
-            className={`btn btn-outline header-btn ${showForecast ? 'btn-active' : ''}`}
-            onClick={() => setShowForecast(v => !v)}
+            className={`btn btn-outline header-btn ${faultsPanelOpen ? 'btn-active' : ''}`}
+            onClick={() => setFaultsPanelOpen(v => !v)}
           >
-            🌤 Fault Forecast
+            ⚡ Faults
           </button>
           <button
             className={`btn btn-outline header-btn ${dqOpen ? 'btn-active' : ''}`}
@@ -100,22 +108,35 @@ export default function App() {
 
       {/* Main layout */}
       <div className="app-body">
+        {/* Faults Panel — left-side drawer */}
+        <FaultsPanel
+          isOpen={faultsPanelOpen}
+          onClose={() => setFaultsPanelOpen(false)}
+          selectedSubstation={selectedSubstation}
+          onOutagesChange={setOutageData}
+          onShowOnMapChange={setShowFaultsOnMap}
+          showFaultsOnMap={showFaultsOnMap}
+          onLocate={handleLocate}
+          forecastData={forecastData}
+          forecastDay={forecastDay}
+          onForecastLoaded={setForecastData}
+          onForecastDayChange={setForecastDay}
+          onForecastOverlayChange={setForecastOverlayActive}
+          forecastOverlayActive={forecastOverlayActive}
+        />
+
         {/* Map */}
         <div className={`map-area ${selectedSubstation ? 'map-area--with-sidebar' : ''}`} style={{ position: 'relative' }}>
           <MapView
             onSelectSubstation={handleSelectSubstation}
             selectedSubstation={selectedSubstation}
             onLvCountChange={setLvCountInEsa}
-            forecastData={showForecast ? forecastData : null}
+            forecastData={forecastOverlayActive ? forecastData : null}
             forecastDay={forecastDay}
+            outageData={outageData}
+            showFaultsOnMap={showFaultsOnMap}
+            onFlyToReady={handleFlyToReady}
           />
-          {showForecast && (
-            <FaultForecastPanel
-              onForecastLoaded={setForecastData}
-              onDayChange={setForecastDay}
-              selectedDay={forecastDay}
-            />
-          )}
         </div>
 
         {/* Substation Sidebar */}
@@ -125,7 +146,6 @@ export default function App() {
             onClose={() => setSelectedSubstation(null)}
             onAskChatbot={handleAskChatbot}
             lvCountInEsa={lvCountInEsa}
-            forecastData={forecastData}
           />
         )}
 
