@@ -142,32 +142,59 @@ app.post('/api/chat', requireAuth, chatLimiter, async (req, res) => {
 // Keeps the NERDA API key server-side. All requests are JWT-authenticated
 // and rate-limited to avoid hammering SSEN's infrastructure.
 //
-// Auth: the NERDA long-term key is tried three ways (spec is ambiguous for
-// GET endpoints): Bearer header, X-Api-Key header, and apiKey query param.
-// Whichever returns non-401 wins. Only the first successful method is used.
+// Auth strategy: NERDA's API guide states long-term keys are sent "in the
+// request body (not as a Bearer token)" — {username, apiKey} JSON body.
+// However the data endpoints are GETs, so we try four approaches in order
+// and return the first non-auth-error response:
+//   1. Bearer header  (works for short-term/session keys)
+//   2. X-Api-Key header  (Azure API Management pattern)
+//   3. apiKey query parameter
+//   4. POST with {username, apiKey} JSON body  (matches NERDA API guide)
+// 502s are treated as auth failures so we keep trying other methods.
 const NERDA_BASE = 'https://nerda-prod-apis-v2.azurewebsites.net/api';
 
+const AUTH_FAIL = new Set([401, 403, 502]);
+
 async function nerdaFetch(url) {
-  const key = process.env.NERDA_API_KEY;
+  const key      = process.env.NERDA_API_KEY;
+  const username = process.env.NERDA_USERNAME;
 
-  // Try Bearer token (works for short-term keys, may work for long-term too)
+  const log = (method, status) =>
+    console.log(`[NERDA] auth=${method} → ${status}  ${url.split('?')[0]}`);
+
+  // 1. Bearer token
   let r = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${key}`, 'Accept': 'application/json' },
+    headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
   });
-  if (r.status !== 401 && r.status !== 403) return r;
+  log('bearer', r.status);
+  if (!AUTH_FAIL.has(r.status)) return r;
 
-  // Try X-Api-Key header (common Azure API Management pattern)
+  // 2. X-Api-Key header (Azure API Management)
   r = await fetch(url, {
-    headers: { 'X-Api-Key': key, 'Accept': 'application/json' },
+    headers: { 'X-Api-Key': key, Accept: 'application/json' },
   });
-  if (r.status !== 401 && r.status !== 403) return r;
+  log('x-api-key', r.status);
+  if (!AUTH_FAIL.has(r.status)) return r;
 
-  // Try as query parameter (REST fallback for long-term keys)
+  // 3. apiKey query parameter
   const sep = url.includes('?') ? '&' : '?';
   r = await fetch(`${url}${sep}apiKey=${encodeURIComponent(key)}`, {
-    headers: { 'Accept': 'application/json' },
+    headers: { Accept: 'application/json' },
   });
-  return r;
+  log('query-param', r.status);
+  if (!AUTH_FAIL.has(r.status)) return r;
+
+  // 4. POST with credentials in body (long-term key — NERDA API guide §3.2)
+  if (username) {
+    r = await fetch(url, {
+      method:  'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ username, apiKey: key }),
+    });
+    log('post-body', r.status);
+  }
+
+  return r; // return last response regardless
 }
 
 // GET /api/nerda/substations          → all substations (name→UUID lookup)
