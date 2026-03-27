@@ -9,21 +9,14 @@ import 'leaflet/dist/leaflet.css';
 import { getVoltageColor, getStatusColor } from '../data/substations';
 
 // ── Smart-meter demand cache ───────────────────────────────────────────────
+// Single file: { date, timestamps[48], primaries: { nrn: { kW[48], meters, transformers:{id:{name,kW[48]}} } } }
 let _demandCache = null;
-async function loadDemandByPrimary() {
+async function loadDemandProfiles() {
   if (!_demandCache) {
-    const r = await fetch('/demand-by-primary.json');
+    const r = await fetch('/demand-profiles.json');
     _demandCache = await r.json();
   }
   return _demandCache;
-}
-const _txCache = {};
-async function loadTransformers(nrn) {
-  if (!_txCache[nrn]) {
-    const r = await fetch(`/demand-transformers/${nrn}.json`);
-    _txCache[nrn] = await r.json();
-  }
-  return _txCache[nrn];
 }
 
 // ── DFES data cache (shared across sidebar instances) ─────────────────────
@@ -579,161 +572,145 @@ function DataQualityTab({ sub, lvCountInEsa }) {
 }
 
 // ── Tab: Smart-Meter Demand Profile ───────────────────────────────────────
-function DemandTab({ sub }) {
-  const nrn = sub?.nrn;
-  const [primary, setPrimary]     = useState(null);
-  const [txData, setTxData]       = useState(null);
-  const [showTx, setShowTx]       = useState(false);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState(null);
-  const [txLoading, setTxLoading] = useState(false);
+const TX_COLORS = ['#4FC3F7','#00E676','#FFD700','#FF9500','#FF4444',
+                   '#CE93D8','#80DEEA','#A5D6A7','#FFCC02','#F48FB1',
+                   '#90CAF9','#B0BEC5','#FFAB40','#69F0AE','#EF9A9A'];
+
+function DemandChart({ timestamps, kW, height = 160, color = '#4FC3F7', label = 'Demand' }) {
+  const chartData = timestamps.map((ts, i) => ({
+    t: i % 4 === 0 ? ts : '',
+    tFull: ts,
+    MW: Math.round(kW[i] / 100) / 10,
+  }));
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={chartData} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+        <XAxis dataKey="t" tick={{ fill: '#aaa', fontSize: 9 }} interval={0} />
+        <YAxis tick={{ fill: '#aaa', fontSize: 9 }} tickFormatter={v => `${v}MW`} />
+        <RechartTooltip
+          contentStyle={{ background: '#0d1117', border: '1px solid #333', borderRadius: 6, fontSize: 11 }}
+          formatter={v => [`${v} MW`, label]}
+          labelFormatter={(_, p) => p?.[0]?.payload?.tFull ?? ''}
+        />
+        <Line type="monotone" dataKey="MW" stroke={color} strokeWidth={2} dot={false} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+function DemandTab({ sub, primaryNrn }) {
+  // Works for primary subs (sub.nrn) or LV subs shown in context of a primary (primaryNrn prop)
+  const nrn = sub?.nrn || primaryNrn;
+  const isLV = !sub?.nrn && !!primaryNrn;
+
+  const [profiles, setProfiles] = useState(null);
+  const [entry, setEntry]       = useState(null);
+  const [showTx, setShowTx]     = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
 
   useEffect(() => {
     if (!nrn) { setLoading(false); return; }
-    setLoading(true); setError(null); setPrimary(null); setTxData(null); setShowTx(false);
-    loadDemandByPrimary()
-      .then(all => {
-        const padded = nrn.padStart(4, '0');
-        const d = all[padded] || all[nrn];
-        if (!d) setError(`No demand data for NRN ${nrn}`);
-        else setPrimary(d);
+    setLoading(true); setError(null); setEntry(null); setShowTx(false);
+    loadDemandProfiles()
+      .then(p => {
+        setProfiles(p);
+        const key = nrn.padStart(4, '0');
+        const d = p.primaries[key] || p.primaries[nrn];
+        if (!d) setError(`No demand data for NRN ${nrn} (24 Mar 2026)`);
+        else setEntry(d);
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [nrn]);
 
-  const toggleTx = () => {
-    if (showTx) { setShowTx(false); return; }
-    if (txData) { setShowTx(true); return; }
-    const padded = (nrn || '').padStart(4, '0');
-    setTxLoading(true);
-    loadTransformers(padded)
-      .then(d => { setTxData(d); setShowTx(true); })
-      .catch(e => setError(e.message))
-      .finally(() => setTxLoading(false));
-  };
+  if (loading) return <section className="sidebar-section"><p className="section-text" style={{ opacity: 0.5 }}>⏳ Loading demand profile…</p></section>;
+  if (error)   return <section className="sidebar-section"><p className="section-text" style={{ color: '#FF9500' }}>⚠ {error}</p></section>;
+  if (!nrn)    return <section className="sidebar-section"><p className="section-text" style={{ opacity: 0.5 }}>No NRN available — demand data requires a primary substation.</p></section>;
+  if (!entry)  return null;
 
-  if (loading) return (
-    <section className="sidebar-section">
-      <p className="section-text" style={{ opacity: 0.5 }}>⏳ Loading demand profile…</p>
-    </section>
-  );
-  if (error) return (
-    <section className="sidebar-section">
-      <p className="section-text" style={{ color: '#FF9500' }}>⚠ {error}</p>
-    </section>
-  );
-  if (!primary) return (
-    <section className="sidebar-section">
-      <p className="section-text" style={{ opacity: 0.5 }}>No NRN available for this substation.</p>
-    </section>
-  );
+  const { kW, meters, transformers } = entry;
+  const ts = profiles.timestamps;
 
-  const { timestamps, kW } = primary;
-  // Format timestamps for display — show label every 4 half-hours (every 2 hours)
-  const chartData = timestamps.map((ts, i) => ({
-    t: i % 4 === 0 ? ts : '',
-    tFull: ts,
-    kW: kW[i],
-    MW: Math.round(kW[i] / 100) / 10,  // 1 d.p. MW
-  }));
+  const peakMW = Math.max(...kW) / 1000;
+  const minMW  = Math.min(...kW) / 1000;
+  const avgMW  = (kW.reduce((a,b)=>a+b,0) / kW.length) / 1000;
 
-  const peakMW  = Math.max(...kW) / 1000;
-  const minMW   = Math.min(...kW) / 1000;
-  const avgMW   = (kW.reduce((a, b) => a + b, 0) / kW.length) / 1000;
-  const loadFactor = avgMW / peakMW;
+  // Transformer chart — ranked by peak, top 15, using substation names
+  const rankedTx = Object.entries(transformers)
+    .map(([id, t]) => ({ id, name: t.name, peak: Math.max(...t.kW) }))
+    .sort((a,b) => b.peak - a.peak)
+    .slice(0, 15);
 
-  // Transformer chart data
-  let txChartData = null;
-  let txKeys = [];
-  if (showTx && txData) {
-    const { transformers } = txData;
-    // Sort transformers by peak demand, take top 15
-    const ranked = Object.entries(transformers)
-      .map(([k, vals]) => ({ k, peak: Math.max(...vals) }))
-      .sort((a, b) => b.peak - a.peak)
-      .slice(0, 15)
-      .map(x => x.k);
-    txKeys = ranked;
-    txChartData = timestamps.map((ts, i) => {
-      const row = { t: i % 4 === 0 ? ts : '', tFull: ts };
-      ranked.forEach(k => { row[k] = Math.round(transformers[k][i] / 100) / 10; });
-      return row;
-    });
-  }
-
-  const TX_COLORS = ['#4FC3F7','#00E676','#FFD700','#FF9500','#FF4444',
-                     '#CE93D8','#80DEEA','#A5D6A7','#FFCC02','#F48FB1',
-                     '#90CAF9','#B0BEC5','#FFAB40','#69F0AE','#EF9A9A'];
+  const txChartData = ts.map((t, i) => {
+    const row = { t: i % 4 === 0 ? t : '', tFull: t };
+    rankedTx.forEach(({ id, name }) => { row[name] = transformers[id].kW[i] / 1000; });
+    return row;
+  });
 
   return (
     <>
-      {/* Summary stats */}
       <section className="sidebar-section">
-        <h3 className="section-title">Demand Profile — 24 Mar 2026</h3>
+        <h3 className="section-title">Demand Profile — 24 Mar 2026{isLV ? ' (Primary ESA)' : ''}</h3>
         <p style={{ fontSize: 10, color: '#3a5268', marginBottom: 8 }}>
-          Source: DCC Smart Meter half-hourly data · NRN {nrn}
+          DCC Smart Meter · NRN {nrn} · ~{meters.toLocaleString()} avg active meters
         </p>
+
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           {[
-            { label: 'Peak',  val: `${peakMW.toFixed(1)} MW` },
-            { label: 'Min',   val: `${minMW.toFixed(1)} MW` },
-            { label: 'Avg',   val: `${avgMW.toFixed(1)} MW` },
-            { label: 'Load Factor', val: `${(loadFactor * 100).toFixed(0)}%` },
+            { label: 'Peak',        val: `${peakMW.toFixed(1)} MW` },
+            { label: 'Min',         val: `${minMW.toFixed(1)} MW`  },
+            { label: 'Avg',         val: `${avgMW.toFixed(1)} MW`  },
+            { label: 'Load Factor', val: `${peakMW > 0 ? ((avgMW/peakMW)*100).toFixed(0) : '—'}%` },
           ].map(({ label, val }) => (
-            <div key={label} style={{ flex: '1 1 70px', background: '#0a1929', borderRadius: 6, padding: '6px 8px', textAlign: 'center' }}>
-              <div style={{ fontSize: 9, color: '#3a5268', textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
-              <div style={{ fontSize: 13, color: '#4FC3F7', fontWeight: 600 }}>{val}</div>
+            <div key={label} style={{ flex:'1 1 70px', background:'#0a1929', borderRadius:6, padding:'6px 8px', textAlign:'center' }}>
+              <div style={{ fontSize:9, color:'#3a5268', textTransform:'uppercase', marginBottom:2 }}>{label}</div>
+              <div style={{ fontSize:13, color:'#4FC3F7', fontWeight:600 }}>{val}</div>
             </div>
           ))}
         </div>
 
-        {/* Primary demand chart */}
-        <ResponsiveContainer width="100%" height={160}>
-          <LineChart data={chartData} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="t" tick={{ fill: '#aaa', fontSize: 9 }} interval={0} />
-            <YAxis tick={{ fill: '#aaa', fontSize: 9 }} tickFormatter={v => `${v}MW`} />
-            <RechartTooltip
-              contentStyle={{ background: '#0d1117', border: '1px solid #333', borderRadius: 6, fontSize: 11 }}
-              formatter={(v, _) => [`${v} MW`, 'Demand']}
-              labelFormatter={(_, payload) => payload?.[0]?.payload?.tFull ?? ''}
-            />
-            <Line type="monotone" dataKey="MW" stroke="#4FC3F7" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <DemandChart timestamps={ts} kW={kW} height={160} />
       </section>
 
-      {/* Transformer breakdown toggle */}
+      {/* Secondary transformer breakdown */}
       <section className="sidebar-section" style={{ paddingTop: 0 }}>
-        <button
-          onClick={toggleTx}
-          style={{ fontSize: 11, color: '#4FC3F7', background: 'transparent', border: '1px solid #1a3a5c',
-            borderRadius: 4, padding: '4px 10px', cursor: 'pointer', marginBottom: 8 }}>
-          {txLoading ? '⏳ Loading…' : showTx ? '▲ Hide transformer breakdown' : '▼ Show transformer breakdown (top 15)'}
+        <button onClick={() => setShowTx(v => !v)}
+          style={{ fontSize:11, color:'#4FC3F7', background:'transparent', border:'1px solid #1a3a5c',
+            borderRadius:4, padding:'4px 10px', cursor:'pointer', marginBottom:8 }}>
+          {showTx ? '▲ Hide secondary transformer breakdown' : `▼ Show secondary transformer breakdown (${rankedTx.length})`}
         </button>
 
-        {showTx && txChartData && (
+        {showTx && (
           <>
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={txChartData} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={txChartData} margin={{ top:4, right:8, left:-10, bottom:0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="t" tick={{ fill: '#aaa', fontSize: 9 }} interval={0} />
-                <YAxis tick={{ fill: '#aaa', fontSize: 9 }} tickFormatter={v => `${v}MW`} />
+                <XAxis dataKey="t" tick={{ fill:'#aaa', fontSize:9 }} interval={0} />
+                <YAxis tick={{ fill:'#aaa', fontSize:9 }} tickFormatter={v=>`${v.toFixed(1)}MW`} />
                 <RechartTooltip
-                  contentStyle={{ background: '#0d1117', border: '1px solid #333', borderRadius: 6, fontSize: 10 }}
-                  formatter={(v, name) => [`${v} MW`, `TX ${name}`]}
-                  labelFormatter={(_, payload) => payload?.[0]?.payload?.tFull ?? ''}
+                  contentStyle={{ background:'#0d1117', border:'1px solid #333', borderRadius:6, fontSize:10 }}
+                  formatter={(v, name) => [`${(+v).toFixed(2)} MW`, name]}
+                  labelFormatter={(_, p) => p?.[0]?.payload?.tFull ?? ''}
                 />
-                {txKeys.map((k, i) => (
-                  <Line key={k} type="monotone" dataKey={k} stroke={TX_COLORS[i % TX_COLORS.length]}
-                    strokeWidth={1.5} dot={false} connectNulls />
+                {rankedTx.map(({ name }, i) => (
+                  <Line key={name} type="monotone" dataKey={name}
+                    stroke={TX_COLORS[i % TX_COLORS.length]} strokeWidth={1.5} dot={false} connectNulls />
                 ))}
               </LineChart>
             </ResponsiveContainer>
-            <p style={{ fontSize: 9, color: '#3a5268', marginTop: 4 }}>
-              Transformer NRN (3-digit) — top 15 by peak demand
-            </p>
+            {/* Transformer name legend */}
+            <div style={{ marginTop:6 }}>
+              {rankedTx.map(({ name, peak }, i) => (
+                <div key={name} style={{ display:'flex', alignItems:'center', gap:6, fontSize:9, marginBottom:2 }}>
+                  <span style={{ display:'inline-block', width:12, height:2, background:TX_COLORS[i%TX_COLORS.length] }} />
+                  <span style={{ color:'#ccc', flex:1 }}>{name}</span>
+                  <span style={{ color:'#3a5268' }}>peak {(peak/1000).toFixed(2)} MW</span>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize:9, color:'#3a5268', marginTop:6 }}>Secondary substations (SSE ID) — top {rankedTx.length} by peak demand</p>
           </>
         )}
       </section>

@@ -20,8 +20,8 @@ dist-ssr
 # Raw source data — too large for git, not redistributable
 manual_data/
 
-# Generated demand profile assets — too many files for git, regenerate from manual_data
-public/demand-transformers/
+# Generated demand profile assets — regenerate with: node scripts/process-smartmeter.mjs
+# demand-profiles.json IS committed (215 KB, SEPD-only, pre-processed)
 
 # Editor directories and files
 .vscode/*
