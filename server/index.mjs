@@ -216,14 +216,15 @@ async function nerdaFetch(url, shortTermKey) {
   return r;
 }
 
-// GET /api/nerda/substations          → all substations (name→UUID lookup)
-// GET /api/nerda/substations?uuid=... → single substation with measurement IDs
+// GET /api/nerda/substations?uuid=...  → single substation by NERDA UUID
+// GET /api/nerda/substations?name=...  → search by sds_site_id (preferred — avoids full-list 500)
+// GET /api/nerda/substations           → all substations (likely 500 — avoid)
 app.get('/api/nerda/substations', requireAuth, nerdaLimiter, async (req, res) => {
   const shortKey = req.headers['x-nerda-key'] || '';
-  const { uuid } = req.query;
-  const url = uuid
-    ? `${NERDA_BASE}/ApiNerdaStatic?substation=${encodeURIComponent(uuid)}`
-    : `${NERDA_BASE}/ApiNerdaStatic`;
+  const { uuid, name } = req.query;
+  const url = uuid ? `${NERDA_BASE}/ApiNerdaStatic?substation=${encodeURIComponent(uuid)}`
+            : name ? `${NERDA_BASE}/ApiNerdaStatic?sds_site_id=${encodeURIComponent(name)}`
+            : `${NERDA_BASE}/ApiNerdaStatic`;
   try {
     const upstream = await nerdaFetch(url, shortKey);
     const text = await upstream.text();

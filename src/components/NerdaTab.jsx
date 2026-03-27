@@ -32,12 +32,10 @@ function clearShortTermKey() {
 }
 
 // ── Module-level caches (survive tab switches, cleared on page reload) ─────
-let _allStationsCache = null;          // full NERDA station list
-let _allStationsPromise = null;        // in-flight request de-duplication
-const _substationCache = new Map();    // uuid → { data, ts }
+const _substationCache = new Map();    // name → { data, ts }
 const _timeseriesCache = new Map();    // measurementId → { points, ts }
 const SUBSTATION_TTL  = 15 * 60_000;  // 15 min
-const TIMESERIES_TTL  = 10 * 60_000;  // 10 min
+const TIMESERIES_TTL  =  5 * 60_000;  //  5 min (short window — data changes quickly)
 
 function appAuthHeaders() {
   return { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' };
@@ -47,24 +45,36 @@ function nerdaProxyHeaders(shortKey) {
   return { ...appAuthHeaders(), 'X-Nerda-Key': shortKey };
 }
 
-async function fetchAllStations(shortKey) {
-  if (_allStationsCache) return _allStationsCache;
-  if (_allStationsPromise) return _allStationsPromise;
-  _allStationsPromise = fetch('/api/nerda/substations', { headers: nerdaProxyHeaders(shortKey) })
-    .then(r => { if (!r.ok) throw new Error(`NERDA ${r.status}`); return r.json(); })
-    .then(data => { _allStationsCache = data; _allStationsPromise = null; return data; })
-    .catch(e => { _allStationsPromise = null; throw e; });
-  return _allStationsPromise;
-}
-
-async function fetchSubstationDetail(uuid, shortKey) {
-  const cached = _substationCache.get(uuid);
+// Fetch substation by name — tries sds_site_id variants to avoid the
+// full-list endpoint which returns 500 (too much data to serve at once).
+async function fetchSubstationByName(subName, shortKey) {
+  const norm = normName(subName);
+  const cached = _substationCache.get(norm);
   if (cached && Date.now() - cached.ts < SUBSTATION_TTL) return cached.data;
-  const r = await fetch(`/api/nerda/substations?uuid=${encodeURIComponent(uuid)}`, { headers: nerdaProxyHeaders(shortKey) });
-  if (!r.ok) throw new Error(`NERDA ${r.status}`);
-  const data = await r.json();
-  _substationCache.set(uuid, { data, ts: Date.now() });
-  return data;
+
+  // Try progressively shorter name variants in case NERDA uses a truncated id
+  const variants = [
+    norm,
+    subName.toUpperCase().trim(),
+    norm.replace(/[^A-Z0-9 ]/g, ''),  // alphanumeric only
+  ];
+
+  for (const v of variants) {
+    const r = await fetch(
+      `/api/nerda/substations?name=${encodeURIComponent(v)}`,
+      { headers: nerdaProxyHeaders(shortKey) }
+    );
+    if (r.ok) {
+      const data = await r.json();
+      // Check we actually got a station (not an empty result)
+      const station = Array.isArray(data) ? data[0] : data;
+      if (station?.lines || station?.sds_site_id) {
+        _substationCache.set(norm, { data: station, ts: Date.now() });
+        return station;
+      }
+    }
+  }
+  return null; // not found
 }
 
 async function fetchTimeseries(measurementId, after, shortKey) {
@@ -306,38 +316,20 @@ export default function NerdaTab({ sub }) {
     setErrorMsg('');
 
     try {
-      // Step 1: find the NERDA UUID by matching name
-      const allStations = await fetchAllStations(shortKey);
-      const myNorm = normName(sub.name);
-
-      // allStations may be an array or object — normalise
-      const list = Array.isArray(allStations) ? allStations
-        : Array.isArray(allStations?.substations) ? allStations.substations
-        : Array.isArray(allStations?.data) ? allStations.data
-        : Object.values(allStations);
-
-      const match = list.find(s => {
-        const sName = s.name || s.substation_name || s.displayName || '';
-        return normName(sName) === myNorm;
-      });
-
+      // Step 1: find substation by name directly (avoids full-list 500)
+      const station = await fetchSubstationByName(sub.name, shortKey);
       if (!mountedRef.current) return;
 
-      if (!match) {
+      if (!station) {
         setPhase('not-found');
         return;
       }
 
-      const uuid = match.id || match.uuid || match.substation_id || match.nerda_id;
-      setNerdaUuid(uuid);
-      setNerdaName(match.name || match.substation_name || match.displayName);
+      setNerdaName(station.sds_site_id || sub.name);
       setPhase('loading');
 
-      // Step 2: get measurement IDs for this substation
-      const detail = await fetchSubstationDetail(uuid, shortKey);
-      if (!mountedRef.current) return;
-
-      const picked = pickMeasurements(detail);
+      // Step 2: pick measurements from the same response (no second API call needed)
+      const picked = pickMeasurements(station);
 
       if (picked.length === 0) {
         setPhase('ready');
@@ -345,8 +337,8 @@ export default function NerdaTab({ sub }) {
         return;
       }
 
-      // Step 3: fetch last 12h of time-series for each selected measurement
-      const after = new Date(Date.now() - 12 * 60 * 60_000).toISOString();
+      // Step 3: fetch last 30 min of time-series for each selected measurement
+      const after = new Date(Date.now() - 30 * 60_000).toISOString();
 
       // Fetch sequentially to be kind to the API
       const results = [];
@@ -370,7 +362,6 @@ export default function NerdaTab({ sub }) {
       if (msg.includes('401') || msg.includes('403')) {
         // Key likely expired — clear it and ask for a new one
         clearShortTermKey();
-        _allStationsCache = null;
         setPhase('need-key');
         return;
       }
@@ -385,8 +376,8 @@ export default function NerdaTab({ sub }) {
 
   const COLORS = ['#00BCD4', '#00E676', '#FF9500', '#9C27B0'];
 
-  const after12h = new Date(Date.now() - 12 * 60 * 60_000);
-  const timeLabel = `${after12h.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} — now`;
+  const after30m = new Date(Date.now() - 30 * 60_000);
+  const timeLabel = `${after30m.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} — now`;
 
   if (sub?.type !== 'Primary') {
     return (
@@ -404,7 +395,7 @@ export default function NerdaTab({ sub }) {
 
       {phase === 'idle' && (
         <button onClick={load} style={CS.loadBtn}>
-          Fetch last 12h of load data
+          Fetch last 30 min of load data
         </button>
       )}
 
@@ -473,7 +464,7 @@ export default function NerdaTab({ sub }) {
       )}
 
       <p className="data-source-label" style={{ marginTop: 12 }}>
-        Source: SSEN NeRDA Portal · SCADA PowerOn · 10-min intervals · Last 12 hours
+        Source: SSEN NeRDA Portal · SCADA PowerOn · 10-min intervals · Last 30 minutes
       </p>
     </section>
   );
