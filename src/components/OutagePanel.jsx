@@ -136,10 +136,15 @@ export function FaultMapMarkers({ outages, visible }) {
 // ── Complaints risk helpers ────────────────────────────────────────────────
 function findNearestPrimary(lat, lng, complaintsData) {
   if (!complaintsData?.primaries) return null;
+  // Apply cos(lat) correction to longitude delta so east/west distances are
+  // not over-favoured vs north/south. At 51°N, 1° lon ≈ 70km vs 1° lat ≈ 111km.
+  const cosLat = Math.cos(lat * Math.PI / 180);
   let best = null, bestDist = Infinity;
   for (const [nrn, p] of Object.entries(complaintsData.primaries)) {
     if (p.lat == null || p.lng == null) continue;
-    const d = (p.lat - lat) ** 2 + (p.lng - lng) ** 2;
+    const dLat = p.lat - lat;
+    const dLng = (p.lng - lng) * cosLat;
+    const d = dLat * dLat + dLng * dLng;
     if (d < bestDist) { bestDist = d; best = { nrn, ...p }; }
   }
   return best;

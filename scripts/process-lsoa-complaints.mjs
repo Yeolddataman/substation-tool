@@ -227,9 +227,11 @@ async function main() {
     if (lsoa && o.measures?.description === 'Value') households[lsoa] = o.obs_value?.value ?? 0;
   });
 
-  // 4b. Age (TS007A) — we want bands 18-34, 35-54, 55-64, 65+
-  // Variable codes: age bands are broken out by variable. Filter by measures=20100 (value)
-  // and sum the relevant single-year age bands.
+  // 4b. Age (TS007A) — bands 18-34, 35-54, 55-64, 65+
+  // FIX: use adults (18+) as the denominator, not total population. Children (0–17)
+  // cannot file complaints; including them dilutes adult proportions, pulling all
+  // ageIdx values systematically low before normalisation. Using adult-only denominator
+  // means the multipliers (1.25, 1.55, 1.10, 0.75) apply to their calibrated base.
   console.log('  Fetching age distribution (TS007A)…');
   const ageRaw = await fetchNomis(DATASETS.age, LSOA_TYPE, '20100');
   const ageLsoa = {};
@@ -238,43 +240,70 @@ async function main() {
     const ageBand = o.C2021_AGE_92?.description ?? '';
     const val = o.obs_value?.value ?? 0;
     if (!lsoa) return;
-    if (!ageLsoa[lsoa]) ageLsoa[lsoa] = { total: 0, p18_34: 0, p35_54: 0, p55_64: 0, p65plus: 0 };
+    if (!ageLsoa[lsoa]) ageLsoa[lsoa] = { adult: 0, p18_34: 0, p35_54: 0, p55_64: 0, p65plus: 0 };
     const age = parseInt(ageBand.replace(/\D/g, ''), 10);
-    if (isNaN(age)) { ageLsoa[lsoa].total += val; return; }
-    ageLsoa[lsoa].total += val;
-    if (age >= 18 && age <= 34) ageLsoa[lsoa].p18_34 += val;
-    else if (age >= 35 && age <= 54) ageLsoa[lsoa].p35_54 += val;
-    else if (age >= 55 && age <= 64) ageLsoa[lsoa].p55_64 += val;
-    else if (age >= 65) ageLsoa[lsoa].p65plus += val;
+    if (isNaN(age) || age < 18) return; // skip children and non-numeric rows
+    ageLsoa[lsoa].adult += val;          // adult-only denominator
+    if (age <= 34)       ageLsoa[lsoa].p18_34  += val;
+    else if (age <= 54)  ageLsoa[lsoa].p35_54  += val;
+    else if (age <= 64)  ageLsoa[lsoa].p55_64  += val;
+    else                 ageLsoa[lsoa].p65plus  += val;
   });
   const ageProp = {};
   Object.entries(ageLsoa).forEach(([lsoa, d]) => {
-    const t = d.total || 1;
+    const t = d.adult || 1;  // adult-only denominator
     ageProp[lsoa] = { p18_34: d.p18_34/t, p35_54: d.p35_54/t, p55_64: d.p55_64/t, p65plus: d.p65plus/t };
   });
 
-  // 4c. NS-SEC (TS062) — groups 1-2 (higher mgr/professional), 3-5, 6-8 (routine)
+  // 4c. NS-SEC (TS062) — groups 1-2 (higher mgr/professional), 3-5, 6-8 (routine), other
+  // FIX 1: p_other is now tracked and applied (previously defined in weights but silently unused).
+  //         "Does not apply", students, long-term unemployed → p_other weight = 0.90.
+  // FIX 2: Regex broadened to handle both "1. Higher..." and "L1, L2..." Nomis format variants.
+  //         Descriptive keyword fallback added so any format change doesn't silently zero the index.
   console.log('  Fetching NS-SEC (TS062)…');
   const nssecRaw = await fetchNomis(DATASETS.nssec, LSOA_TYPE, '20100');
   const nssecLsoa = {};
+  const _nssecSampleCats = new Set(); // diagnostic: log unique category strings seen
   nssecRaw.forEach(o => {
     const lsoa = o.geography?.geogcode;
     const cat  = o.C2021_NSSEC_10?.description ?? '';
     const val  = o.obs_value?.value ?? 0;
     if (!lsoa) return;
-    if (!nssecLsoa[lsoa]) nssecLsoa[lsoa] = { total: 0, p_1_2: 0, p_3_5: 0, p_6_8: 0 };
+    _nssecSampleCats.add(cat);
+    if (!nssecLsoa[lsoa]) nssecLsoa[lsoa] = { total: 0, p_1_2: 0, p_3_5: 0, p_6_8: 0, p_other: 0 };
     nssecLsoa[lsoa].total += val;
-    if (/^[12]\./.test(cat)) nssecLsoa[lsoa].p_1_2 += val;
-    else if (/^[345]\./.test(cat)) nssecLsoa[lsoa].p_3_5 += val;
-    else if (/^[678]\./.test(cat)) nssecLsoa[lsoa].p_6_8 += val;
+    // Primary match: leading digit(s) "1.", "2.", or "L1", "L1, L2" style
+    // Secondary match: descriptive keywords — catches any future Nomis format change
+    if      (/^[12][.,\s]|^[Ll][12][.,\s]|managerial.*professional|^higher.*occup/i.test(cat))
+      nssecLsoa[lsoa].p_1_2 += val;
+    else if (/^[345][.,\s]|^[Ll][3-5][.,\s]|intermediate|small employer|supervisory/i.test(cat))
+      nssecLsoa[lsoa].p_3_5 += val;
+    else if (/^[678][.,\s]|^[Ll][6-8][.,\s]|semi-routine|routine occup|never worked|long.term unem/i.test(cat))
+      nssecLsoa[lsoa].p_6_8 += val;
+    else if (/does not apply|student|full.time student|not class/i.test(cat))
+      nssecLsoa[lsoa].p_other += val;
+    // 'Total' row and unrecognised rows don't accumulate to any bucket
   });
+  // Diagnostic: print unique NS-SEC categories so the operator can verify regex matching
+  console.log(`  NS-SEC categories seen (${_nssecSampleCats.size}):`);
+  [..._nssecSampleCats].sort().forEach(c => c && console.log(`    "${c}"`));
+
   const nssecProp = {};
   Object.entries(nssecLsoa).forEach(([lsoa, d]) => {
     const t = d.total || 1;
-    nssecProp[lsoa] = { p_1_2: d.p_1_2/t, p_3_5: d.p_3_5/t, p_6_8: d.p_6_8/t };
+    nssecProp[lsoa] = {
+      p_1_2:  d.p_1_2  / t,
+      p_3_5:  d.p_3_5  / t,
+      p_6_8:  d.p_6_8  / t,
+      p_other: d.p_other / t,
+    };
   });
 
   // 4d. Education (TS067) — degree, level 3, level 1-2, no quals
+  // FIX: Nomis TS067 includes "Apprenticeship" and "Other qualifications" (~5-10% of pop)
+  //      previously unmatched, silently diluting educIdx. Apprenticeship maps to level1_2
+  //      (equivalent to Level 2 in practice); "Other qualifications" also to level1_2
+  //      as the most neutral mid-range assignment.
   console.log('  Fetching education (TS067)…');
   const educRaw = await fetchNomis(DATASETS.education, LSOA_TYPE, '20100');
   const educLsoa = {};
@@ -285,10 +314,11 @@ async function main() {
     if (!lsoa) return;
     if (!educLsoa[lsoa]) educLsoa[lsoa] = { total: 0, degree: 0, level3: 0, level1_2: 0, none: 0 };
     educLsoa[lsoa].total += val;
-    if (/degree|level 4/i.test(cat))     educLsoa[lsoa].degree += val;
-    else if (/level 3/i.test(cat))       educLsoa[lsoa].level3 += val;
-    else if (/level [12]/i.test(cat))    educLsoa[lsoa].level1_2 += val;
-    else if (/no qualif/i.test(cat))     educLsoa[lsoa].none += val;
+    if (/degree|level 4/i.test(cat))                              educLsoa[lsoa].degree   += val;
+    else if (/level 3/i.test(cat))                                educLsoa[lsoa].level3   += val;
+    else if (/level [12]|apprenticeship|other qualif/i.test(cat)) educLsoa[lsoa].level1_2 += val;
+    else if (/no qualif/i.test(cat))                              educLsoa[lsoa].none     += val;
+    // 'Total' row falls through — not bucketed
   });
   const educProp = {};
   Object.entries(educLsoa).forEach(([lsoa, d]) => {
@@ -312,9 +342,11 @@ async function main() {
                   + (age.p55_64  || 0) * AGE_WEIGHTS.p55_64
                   + (age.p65plus || 0) * AGE_WEIGHTS.p65plus;
 
-    const nssecIdx = (nss.p_1_2 || 0) * NSSEC_WEIGHTS.p_1_2
-                   + (nss.p_3_5 || 0) * NSSEC_WEIGHTS.p_3_5
-                   + (nss.p_6_8 || 0) * NSSEC_WEIGHTS.p_6_8;
+    // p_other now included (students, does-not-apply) — weight 0.90 per CAM
+    const nssecIdx = (nss.p_1_2   || 0) * NSSEC_WEIGHTS.p_1_2
+                   + (nss.p_3_5   || 0) * NSSEC_WEIGHTS.p_3_5
+                   + (nss.p_6_8   || 0) * NSSEC_WEIGHTS.p_6_8
+                   + (nss.p_other || 0) * NSSEC_WEIGHTS.p_other;
 
     const educIdx  = (educ.p_degree   || 0) * EDUC_WEIGHTS.p_degree
                    + (educ.p_level3   || 0) * EDUC_WEIGHTS.p_level3
