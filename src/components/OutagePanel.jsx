@@ -198,13 +198,18 @@ export function FaultTimeline({ outages, complaintsData }) {
         24hr Restoration Timeline
       </div>
 
-      {/* Hour ruler */}
-      <div style={{ display: 'flex', paddingLeft: 84, marginBottom: 4 }}>
-        {[0, 6, 12, 18, 24].map(h => (
-          <div key={h} style={{ flex: h === 0 ? 0 : 6, fontSize: 9, color: '#3a5268', textAlign: h === 0 ? 'left' : 'center' }}>
-            {h === 0 ? 'Now' : `+${h}h`}
-          </div>
-        ))}
+      {/* Column headers — aligned to the actual column widths */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 4 }}>
+        <div style={{ width: 78, flexShrink: 0 }} />
+        {/* Bar track header: Now on left, +24h on right */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', fontSize: 8, color: '#3a5268', paddingLeft: 2, paddingRight: 2 }}>
+          <span>Now</span>
+          <span>+24h</span>
+        </div>
+        <div style={{ width: 88, flexShrink: 0, fontSize: 8, fontWeight: 600, color: '#6a8099', textAlign: 'right' }}>CML</div>
+        {complaintsData && (
+          <div style={{ width: 62, flexShrink: 0, fontSize: 8, fontWeight: 600, color: '#c084fc', textAlign: 'right' }}>Complaints</div>
+        )}
       </div>
 
       {/* Fault rows */}
@@ -236,7 +241,7 @@ export function FaultTimeline({ outages, complaintsData }) {
             </div>
             {/* CML + ETR date */}
             <div style={{ width: 88, flexShrink: 0, fontSize: 9, color: '#6a8099', textAlign: 'right', whiteSpace: 'nowrap' }}>
-              {cml > 0 ? `${cml.toLocaleString()} CML` : '—'}
+              {cml > 0 ? cml.toLocaleString() : '—'}
               <div style={{ fontSize: 8, color: '#3a5268', marginTop: 1 }}>
                 ETR {new Date(o.estimatedRestoration).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
               </div>
