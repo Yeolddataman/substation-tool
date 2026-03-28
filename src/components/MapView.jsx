@@ -50,11 +50,11 @@ const lvIcon = (type) => L.divIcon({
 });
 
 // ── Legend ────────────────────────────────────────────────────────────────
-function Legend({ showLV, showBoundaries, showHeadroom }) {
+function Legend({ showLV, showBoundaries, showHeadroom, showGSP }) {
   return (
     <div className="map-legend">
       <div className="legend-title">Voltage Level</div>
-      <div className="legend-item"><span className="legend-dot" style={{ background: '#FF4444' }} />400kV GSP</div>
+      <div className="legend-item" style={{ opacity: showGSP ? 1 : 0.35 }}><span className="legend-dot" style={{ background: '#FF4444' }} />400kV GSP{!showGSP && ' (hidden)'}</div>
       <div className="legend-item"><span className="legend-dot" style={{ background: '#FF9500' }} />132kV BSP</div>
       <div className="legend-item"><span className="legend-dot" style={{ background: '#FFD700' }} />33kV Primary</div>
       <div className="legend-item"><span className="legend-dot" style={{ background: '#00E676' }} />11kV</div>
@@ -77,8 +77,8 @@ function Legend({ showLV, showBoundaries, showHeadroom }) {
 }
 
 // ── Static named HV/EHV markers (substations.js fallback set) ─────────────
-function StaticSubstationMarkers({ onSelect, selectedId }) {
-  return substations.map((sub) => {
+function StaticSubstationMarkers({ onSelect, selectedId, showGSP = true }) {
+  return substations.filter(sub => showGSP || sub.type !== 'GSP').map((sub) => {
     const voltageColor = getVoltageColor(sub.voltage);
     const statusColor  = getStatusColor(sub.status);
     const isSelected   = selectedId === sub.id;
@@ -101,8 +101,8 @@ function StaticSubstationMarkers({ onSelect, selectedId }) {
 }
 
 // ── Headroom substation markers — GSP + BSP only (Primary shown via shapefile) ──
-function HeadroomMarkers({ data, onSelect, selectedId }) {
-  const filtered = data.filter(s => s.type === 'GSP' || s.type === 'BSP');
+function HeadroomMarkers({ data, onSelect, selectedId, showGSP = true }) {
+  const filtered = data.filter(s => (s.type === 'GSP' && showGSP) || s.type === 'BSP');
   return filtered.map((sub) => {
     const isSelected = selectedId === sub.id;
     const color = sub.type === 'GSP' ? '#FF4444' : '#FF9500';
@@ -201,7 +201,7 @@ function LVLayer({ data, onSelect }) {
 }
 
 // ── Layer controls ────────────────────────────────────────────────────────
-function LayerControls({ layers, onToggle, counts }) {
+function LayerControls({ layers, onToggle, counts, showGSP, onToggleGSP }) {
   return (
     <div className="layer-controls">
       {[
@@ -216,6 +216,11 @@ function LayerControls({ layers, onToggle, counts }) {
           {counts[key + 'Loading'] ? ' ⏳' : ''}
         </button>
       ))}
+      <button
+        className={`layer-btn layer-btn--sub ${showGSP ? 'layer-btn--active' : ''}`}
+        onClick={onToggleGSP}>
+        {showGSP ? '📍 GSPs visible' : '📍 GSPs hidden'}
+      </button>
     </div>
   );
 }
@@ -223,6 +228,7 @@ function LayerControls({ layers, onToggle, counts }) {
 // ── Main MapView ──────────────────────────────────────────────────────────
 export default function MapView({ onSelectSubstation, selectedSubstation, onLvCountChange, forecastData, forecastDay, outageData = [], showFaultsOnMap = false, onFlyToReady }) {
   const [layers, setLayers] = useState({ boundaries: false, headroom: false, lv: false });
+  const [showGSP, setShowGSP] = useState(true);
   const flyToRef = useRef(null);
 
   useEffect(() => {
@@ -307,20 +313,20 @@ export default function MapView({ onSelectSubstation, selectedSubstation, onLvCo
 
         {/* Headroom markers — real SEPD data */}
         {layers.headroom && headroomData && (
-          <HeadroomMarkers data={headroomData} onSelect={onSelectSubstation} selectedId={selectedSubstation?.id} />
+          <HeadroomMarkers data={headroomData} onSelect={onSelectSubstation} selectedId={selectedSubstation?.id} showGSP={showGSP} />
         )}
 
         {/* Static fallback markers — always visible unless headroom layer is on */}
         {!layers.headroom && (
-          <StaticSubstationMarkers onSelect={onSelectSubstation} selectedId={selectedSubstation?.id} />
+          <StaticSubstationMarkers onSelect={onSelectSubstation} selectedId={selectedSubstation?.id} showGSP={showGSP} />
         )}
 
         {/* Live fault map markers */}
         <FaultMapMarkers outages={outageData} visible={showFaultsOnMap} />
       </MapContainer>
 
-      <Legend showLV={layers.lv} showBoundaries={layers.boundaries} showHeadroom={layers.headroom} />
-      <LayerControls layers={layers} onToggle={toggleLayer} counts={counts} />
+      <Legend showLV={layers.lv} showBoundaries={layers.boundaries} showHeadroom={layers.headroom} showGSP={showGSP} />
+      <LayerControls layers={layers} onToggle={toggleLayer} counts={counts} showGSP={showGSP} onToggleGSP={() => setShowGSP(v => !v)} />
     </div>
   );
 }

@@ -158,32 +158,104 @@ const WEATHER_ZONES = [
   { lat: 51.55, lng:  1.10 }, // 11 Thames Estuary
 ];
 
-// Vulnerability: fault rate per feeder → percentile → multiplier [0.6–1.5]
-function buildVulnerabilityMap() {
+// ── ML Vulnerability Model ─────────────────────────────────────────────────
+// Replaces hard percentile buckets with Z-score sigmoid regression.
+// Train/test split by year: last 2 available years = hold-out test set.
+// Backtest metric: Spearman rank correlation (predicted vuln vs actual test faults).
+
+function spearmanR(x, y) {
+  const n = x.length;
+  if (n < 3) return null;
+  const rank = arr => {
+    const sorted = [...arr].map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]);
+    const r = new Array(n);
+    sorted.forEach(([, i], ri) => (r[i] = ri + 1));
+    return r;
+  };
+  const rx = rank(x), ry = rank(y);
+  const d2 = rx.reduce((s, r, i) => s + (r - ry[i]) ** 2, 0);
+  return 1 - (6 * d2) / (n * (n * n - 1));
+}
+
+function buildMLModel() {
   const data = JSON.parse(
     readFileSync(path.join(__dirname, '../public/headroom-substations.json'), 'utf8')
   );
   const primaries = data.filter(
-    s => s.type === 'Primary' && s.nrn && s.faultsByYear && Object.keys(s.faultsByYear).length > 0
+    s => s.type === 'Primary' && s.nrn && s.faultsByYear &&
+         Object.keys(s.faultsByYear).length >= 3
   );
-  const rates = primaries.map(s => {
-    const vals = Object.values(s.faultsByYear).map(Number).filter(v => !isNaN(v));
-    const avg  = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-    return { nrn: s.nrn, lat: s.lat, lng: s.lng, rate: avg / Math.max(1, s.feederCount || 1) };
-  });
-  rates.sort((a, b) => a.rate - b.rate);
-  const map = {};
-  rates.forEach((r, i) => {
-    const pct  = i / rates.length;
-    const vuln = pct < 0.25 ? 0.60 : pct < 0.50 ? 0.85 : pct < 0.75 ? 1.15 : 1.50;
+
+  // Discover all years with data and split train/test
+  const allYears = [...new Set(
+    primaries.flatMap(s => Object.keys(s.faultsByYear))
+  )].sort();
+  const testYears  = allYears.slice(-2);
+  const trainYears = allYears.slice(0, -2);
+
+  const avgRate = (s, years) => {
+    const vals = years.map(y => s.faultsByYear[y]).filter(v => v != null).map(Number);
+    if (!vals.length) return null;
+    return vals.reduce((a, b) => a + b, 0) / vals.length / Math.max(1, s.feederCount || 1);
+  };
+
+  // Build training set
+  const trainSet = primaries
+    .map(s => ({ nrn: s.nrn, lat: s.lat, lng: s.lng, rate: avgRate(s, trainYears) }))
+    .filter(r => r.rate != null && r.rate >= 0);
+
+  // Fit Z-score parameters from training data
+  const rateVals = trainSet.map(r => r.rate);
+  const mu  = rateVals.reduce((a, b) => a + b, 0) / rateVals.length;
+  const sig = Math.sqrt(rateVals.reduce((a, b) => a + (b - mu) ** 2, 0) / rateVals.length) || 1;
+
+  // Sigmoid maps z-score → [0, 1], scaled to vulnerability range [0.60, 1.50]
+  const sigmoid  = z => 1 / (1 + Math.exp(-z));
+  const toVuln   = rate => 0.60 + sigmoid((rate - mu) / sig) * 0.90;
+
+  // Assign weather zone (nearest centroid)
+  const nearestZone = (lat, lng) => {
     let minD = Infinity, zone = 0;
     WEATHER_ZONES.forEach((z, zi) => {
-      const d = (z.lat - r.lat) ** 2 + (z.lng - r.lng) ** 2;
+      const d = (z.lat - lat) ** 2 + (z.lng - lng) ** 2;
       if (d < minD) { minD = d; zone = zi; }
     });
-    map[r.nrn] = { vuln, zone };
+    return zone;
+  };
+
+  const vulnMap = {};
+  trainSet.forEach(r => {
+    vulnMap[r.nrn] = { vuln: Math.round(toVuln(r.rate) * 1000) / 1000, zone: nearestZone(r.lat, r.lng) };
   });
-  return map;
+
+  // ── Backtest: correlate predicted vulnerability with held-out test fault rates ──
+  const testPairs = primaries
+    .map(s => ({ nrn: s.nrn, testRate: avgRate(s, testYears) }))
+    .filter(r => r.testRate != null && vulnMap[r.nrn]);
+
+  const predVulns = testPairs.map(r => vulnMap[r.nrn].vuln);
+  const actRates  = testPairs.map(r => r.testRate);
+  const rho = spearmanR(predVulns, actRates);
+
+  return {
+    vulnMap,
+    meta: {
+      method: 'Z-score sigmoid regression',
+      description: 'Fault-rate vulnerability learned from NAFIRS annual data. ' +
+        'Each primary\'s average faults/feeder/year is Z-score normalised against ' +
+        'the training population then mapped through a sigmoid to a continuous [0.60–1.50] ' +
+        'multiplier — replacing the four hard percentile buckets of the previous model.',
+      trainYears,
+      testYears,
+      trainSize: trainSet.length,
+      testSize: testPairs.length,
+      spearmanR: rho !== null ? Math.round(rho * 100) / 100 : null,
+      mu:  Math.round(mu  * 10000) / 10000,
+      sig: Math.round(sig * 10000) / 10000,
+      weatherWeights: { wind: 55, rain: 25, snow: 20, temp: 10 },
+      ragThresholds:  { yellow: 0.20, red: 0.45 },
+    },
+  };
 }
 
 // Weather risk factors — calibrated to UK overhead line fault drivers
@@ -197,10 +269,11 @@ const toRAG = score => score < 0.20 ? 'Green' : score < 0.45 ? 'Yellow' : 'Red';
 
 let _forecastCache = null;
 let _forecastTime  = 0;
-let _vulnMap       = null;
+let _model         = null;
 
 async function refreshForecast() {
-  if (!_vulnMap) _vulnMap = buildVulnerabilityMap();
+  if (!_model) _model = buildMLModel();
+  const { vulnMap: _vulnMap, meta: modelMeta } = _model;
 
   const rawZoneData = await Promise.all(
     WEATHER_ZONES.map(z =>
@@ -256,7 +329,7 @@ async function refreshForecast() {
     };
   }
 
-  _forecastCache = { generatedAt: new Date().toISOString(), days, primaries };
+  _forecastCache = { generatedAt: new Date().toISOString(), days, primaries, modelMeta };
   _forecastTime  = Date.now();
   return _forecastCache;
 }

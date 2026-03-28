@@ -67,6 +67,100 @@ function NafirsHistory({ sub }) {
   );
 }
 
+const kphToMph = v => Math.round(v * 0.6214);
+
+function computeNetworkWeather(primaries, numDays) {
+  const acc = Array.from({ length: numDays }, () => ({ gust: [], rain: [], snow: [], tmax: [], rags: {} }));
+  Object.values(primaries).forEach(p => {
+    p.days.forEach((d, i) => {
+      if (!acc[i]) return;
+      acc[i].gust.push(d.gust); acc[i].rain.push(d.rain);
+      acc[i].snow.push(d.snow ?? 0); acc[i].tmax.push(d.tmax);
+      if (d.rag) acc[i].rags[d.rag] = (acc[i].rags[d.rag] || 0) + 1;
+    });
+  });
+  return acc.map(d => {
+    const mean = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+    const rag  = Object.entries(d.rags).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Green';
+    return {
+      gust: Math.round(mean(d.gust)), rain: Math.round(mean(d.rain) * 10) / 10,
+      snow: Math.round(mean(d.snow) * 10) / 10, tmax: Math.round(mean(d.tmax) * 10) / 10, rag,
+    };
+  });
+}
+
+function WeatherCards({ days, weatherDays }) {
+  const maxGust = Math.max(...weatherDays.map(d => d.gust), 1);
+  const maxRain = Math.max(...weatherDays.map(d => d.rain), 0.5);
+  const maxSnow = Math.max(...weatherDays.map(d => d.snow ?? 0), 0.5);
+  const hasSnow = weatherDays.some(d => (d.snow ?? 0) > 0.1);
+
+  const gustColor = g => g < 40 ? '#4FC3F7' : g < 70 ? '#FFD700' : '#FF4444';
+  const tempColor = t => t > 25 ? '#f08030' : t > 18 ? '#f5c842' : t > 10 ? '#7ec8a0' : t > 2 ? '#7ab5cf' : '#a8d4e8';
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 10 }}>
+      {weatherDays.map((day, i) => {
+        const rag = day.rag || 'Green';
+        const mph = kphToMph(day.gust);
+        const gc  = gustColor(day.gust);
+        const tc  = tempColor(day.tmax);
+        return (
+          <div key={i} style={{ background: FC_BG[rag], border: `1px solid ${FC_COLOR[rag]}44`, borderRadius: 8, padding: '8px 7px' }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: 8 }}>
+              <div style={{ fontSize: 9, color: '#6a8099', marginBottom: 2 }}>{days[i]?.label}</div>
+              <div style={{ fontSize: 18, lineHeight: 1 }}>{FC_ICON[rag]}</div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: FC_COLOR[rag], marginTop: 2 }}>{rag}</div>
+            </div>
+
+            {/* Wind */}
+            <div style={{ marginBottom: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
+                <span style={{ fontSize: 8, color: '#6a8099' }}>💨 Wind</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: gc }}>{mph} mph</span>
+              </div>
+              <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
+                <div style={{ width: `${Math.min(100, (day.gust / maxGust) * 100)}%`, background: gc, height: '100%', borderRadius: 2 }} />
+              </div>
+            </div>
+
+            {/* Rain */}
+            <div style={{ marginBottom: hasSnow ? 6 : 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
+                <span style={{ fontSize: 8, color: '#6a8099' }}>🌧 Rain</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#81C784' }}>{day.rain} mm</span>
+              </div>
+              <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
+                <div style={{ width: `${Math.min(100, (day.rain / maxRain) * 100)}%`, background: '#81C784', height: '100%', borderRadius: 2 }} />
+              </div>
+            </div>
+
+            {/* Snow — only row when any day has snow */}
+            {hasSnow && (
+              <div style={{ marginBottom: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
+                  <span style={{ fontSize: 8, color: '#6a8099' }}>❄ Snow</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#B0C4DE' }}>{day.snow ?? 0} cm</span>
+                </div>
+                <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
+                  <div style={{ width: `${Math.min(100, ((day.snow ?? 0) / maxSnow) * 100)}%`, background: '#B0C4DE', height: '100%', borderRadius: 2 }} />
+                </div>
+              </div>
+            )}
+
+            {/* Temperature */}
+            <div style={{ textAlign: 'center', paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: tc }}>{Math.round(day.tmax)}°</span>
+              <span style={{ fontSize: 8, color: '#4a6070' }}> C</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ForecastContent({ forecastData, forecastDay, onDayChange, forecastOverlayActive, onOverlayToggle, selectedSubstation, loading, error }) {
   const nrn     = selectedSubstation?.nrn;
   const primary = forecastData?.primaries?.[nrn];
@@ -75,6 +169,11 @@ function ForecastContent({ forecastData, forecastDay, onDayChange, forecastOverl
     Object.values(forecastData.primaries).forEach(p => { const r = p.days[forecastDay ?? 0]?.rag; if (r) c[r]++; });
     return c;
   })() : null;
+
+  const networkWeather = forecastData?.primaries
+    ? computeNetworkWeather(forecastData.primaries, forecastData.days?.length ?? 3)
+    : null;
+
   return (
     <div>
       {loading && <p style={{ fontSize: 11, color: '#6a8099' }}>Fetching weather forecast…</p>}
@@ -91,44 +190,143 @@ function ForecastContent({ forecastData, forecastDay, onDayChange, forecastOverl
             <span style={{ fontSize:9, color:'#3a5268', flex:1, textAlign:'right' }}>primaries · {forecastData.days[forecastDay]?.label}</span>
           </div>
         )}
-        <button className={`faults-ctrl-btn${forecastOverlayActive ? ' faults-ctrl-btn--active' : ''}`} style={{ marginBottom: 14, width: '100%' }} onClick={() => onOverlayToggle?.(!forecastOverlayActive)}>
+        <button className={`faults-ctrl-btn${forecastOverlayActive ? ' faults-ctrl-btn--active' : ''}`} style={{ marginBottom: 12, width: '100%' }} onClick={() => onOverlayToggle?.(!forecastOverlayActive)}>
           {forecastOverlayActive ? '🗺 Forecast Overlay ON' : '🗺 Show Overlay on Map'}
         </button>
+
+        {/* 3-day weather visualisation */}
         {primary ? (<>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#8899aa', marginBottom: 8 }}>{selectedSubstation.name} — site forecast</p>
-          <div style={{ display:'flex', gap:6, marginBottom:10 }}>
-            {forecastData.days.map((d, i) => {
-              const day = primary.days[i]; const rag = day?.rag || 'Green';
-              return (
-                <div key={i} style={{ flex:1, borderRadius:6, padding:'8px 6px', textAlign:'center', background:FC_BG[rag], border:`1px solid ${FC_COLOR[rag]}44` }}>
-                  <div style={{ fontSize:9, color:'#6a8099', marginBottom:3 }}>{d.label}</div>
-                  <div style={{ fontSize:20, lineHeight:1 }}>{FC_ICON[rag]}</div>
-                  <div style={{ fontSize:10, fontWeight:700, color:FC_COLOR[rag], marginTop:3 }}>{rag}</div>
-                  <div style={{ fontSize:9, color:'#4a6070', marginTop:4 }}>
-                    💨 {day.gust} km/h{day.rain > 0 && <><br />🌧 {day.rain} mm</>}{day.snow > 0 && <><br />❄ {day.snow} cm</>}<br />🌡 {day.tmax}°C
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <p style={{ fontSize:10, color:'#6a8099', marginBottom:6 }}>
-            Vulnerability: {primary.vuln <= 0.7 ? 'Low' : primary.vuln <= 1.0 ? 'Below avg' : primary.vuln <= 1.2 ? 'Above avg' : 'High'} ({primary.vuln}×)
+          <p style={{ fontSize: 10, fontWeight: 700, color: '#8899aa', marginBottom: 6 }}>{selectedSubstation.name}</p>
+          <WeatherCards days={forecastData.days} weatherDays={primary.days} />
+          <p style={{ fontSize: 10, color: '#6a8099', marginBottom: 10 }}>
+            Vulnerability: <strong style={{ color: primary.vuln > 1.2 ? '#FF9500' : primary.vuln > 1.0 ? '#FFD700' : '#4FC3F7' }}>
+              {primary.vuln <= 0.7 ? 'Low' : primary.vuln <= 1.0 ? 'Below avg' : primary.vuln <= 1.2 ? 'Above avg' : 'High'}
+            </strong> ({primary.vuln}×)
           </p>
+        </>) : networkWeather ? (<>
+          <p style={{ fontSize: 10, fontWeight: 700, color: '#8899aa', marginBottom: 2 }}>Network weather — all zones avg</p>
+          <p style={{ fontSize: 9, color: '#3a5268', marginBottom: 6 }}>Select a primary on the map for site-specific forecast</p>
+          <WeatherCards days={forecastData.days} weatherDays={networkWeather} />
         </>) : (
-          <p style={{ fontSize:11, color:'#6a8099', marginBottom:10 }}>
+          <p style={{ fontSize: 11, color: '#6a8099', marginBottom: 10 }}>
             {nrn ? `No forecast model data for NRN ${nrn}.` : 'Select a primary substation to view site-specific forecast.'}
           </p>
         )}
+
         <p style={{ fontSize:9, color:'#2e4460', borderTop:'1px solid rgba(255,255,255,0.04)', paddingTop:6 }}>
-          Weather: Open-Meteo · Risk: wind (55%), rain (25%), snow (20%) · Calibrated to NAFIRS<br />
+          Weather: Open-Meteo · Model: Z-score sigmoid regression · Calibrated to NAFIRS<br />
           Generated: {new Date(forecastData.generatedAt).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}
+          {forecastData.modelMeta?.spearmanR != null && <> · Backtest ρ={forecastData.modelMeta.spearmanR}</>}
+          {' '}<span style={{ color:'#3a5268' }}>— see Model tab</span>
         </p>
       </>)}
     </div>
   );
 }
 
-const TABS = ['Live', 'CML', 'History', 'Forecast'];
+function ModelTab({ forecastData, onFetchForecast, loading, error }) {
+  const meta = forecastData?.modelMeta;
+  const rho  = meta?.spearmanR;
+  const rhoColor = rho == null ? '#6a8099' : rho >= 0.6 ? '#00E676' : rho >= 0.4 ? '#FFD700' : '#FF4444';
+  const rhoLabel = rho == null ? '—' : rho >= 0.6 ? 'Strong' : rho >= 0.4 ? 'Moderate' : 'Weak';
+
+  if (!meta) return (
+    <div style={{ paddingTop: 8 }}>
+      {loading && <p style={{ fontSize: 11, color: '#6a8099' }}>Loading model data…</p>}
+      {error   && <p style={{ fontSize: 11, color: '#FF4444' }}>⚠ {error}</p>}
+      {!loading && !error && (
+        <div style={{ textAlign: 'center', paddingTop: 20 }}>
+          <p style={{ fontSize: 11, color: '#6a8099', marginBottom: 12 }}>Forecast model not yet loaded.</p>
+          <button className="faults-ctrl-btn" onClick={onFetchForecast}>Load Model Data</button>
+        </div>
+      )}
+    </div>
+  );
+
+  const weights = meta.weatherWeights || {};
+  const maxW = Math.max(...Object.values(weights));
+
+  return (
+    <div style={{ fontSize: 11 }}>
+      {/* Header card */}
+      <div style={{ background: 'rgba(79,195,247,0.07)', border: '1px solid rgba(79,195,247,0.2)', borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, color: '#4FC3F7', fontSize: 12, marginBottom: 4 }}>
+          {meta.method}
+        </div>
+        <p style={{ color: '#8899aa', lineHeight: 1.6, margin: 0 }}>{meta.description}</p>
+      </div>
+
+      {/* Backtest metrics */}
+      <div style={{ fontWeight: 700, color: '#6a8099', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Backtest Results</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 14 }}>
+        {[
+          ['Train set',   `${meta.trainSize} sites`,   '#4FC3F7'],
+          ['Test set',    `${meta.testSize} sites`,    '#4FC3F7'],
+          ['Test years',  meta.testYears?.join(', ') || '—', '#aaa'],
+        ].map(([label, val, col]) => (
+          <div key={label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, padding: '8px 10px', textAlign: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: col, marginBottom: 3 }}>{val}</div>
+            <div style={{ fontSize: 9, color: '#4a6070' }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Spearman correlation */}
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${rhoColor}33`, borderRadius: 8, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ textAlign: 'center', minWidth: 52 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: rhoColor, lineHeight: 1 }}>{rho ?? '—'}</div>
+          <div style={{ fontSize: 9, color: rhoColor, marginTop: 2 }}>ρ (Spearman)</div>
+        </div>
+        <div>
+          <div style={{ fontWeight: 700, color: rhoColor, marginBottom: 3 }}>{rhoLabel} rank correlation</div>
+          <div style={{ color: '#6a8099', lineHeight: 1.5 }}>
+            Predicted vulnerability rank vs actual fault rate in {meta.testYears?.join('–') || 'test years'}.
+            Training data: {meta.trainYears?.[0]}–{meta.trainYears?.at(-1)}.
+          </div>
+        </div>
+      </div>
+
+      {/* Weather feature weights */}
+      <div style={{ fontWeight: 700, color: '#6a8099', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Weather Feature Weights</div>
+      <div style={{ marginBottom: 14 }}>
+        {[['Wind gusts', weights.wind, '#4FC3F7'], ['Rainfall', weights.rain, '#81C784'], ['Snowfall', weights.snow, '#B0C4DE'], ['Temperature', weights.temp, '#FFD700']].map(([label, w, col]) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <div style={{ width: 90, color: '#8899aa', flexShrink: 0 }}>{label}</div>
+            <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 3, height: 8, overflow: 'hidden' }}>
+              <div style={{ width: `${(w / maxW) * 100}%`, background: col, height: '100%', borderRadius: 3 }} />
+            </div>
+            <div style={{ width: 32, textAlign: 'right', color: col, fontWeight: 700 }}>{w}%</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Model parameters */}
+      <div style={{ fontWeight: 700, color: '#6a8099', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Fitted Parameters</div>
+      <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#4a6070', lineHeight: 1.8, background: 'rgba(0,0,0,0.2)', borderRadius: 6, padding: '8px 10px', marginBottom: 12 }}>
+        <span style={{ color: '#4FC3F7' }}>vuln</span> = 0.60 + σ( (<span style={{ color: '#FFD700' }}>rate</span> − {meta.mu}) / {meta.sig} ) × 0.90<br />
+        <span style={{ color: '#6a8099' }}>range: [0.60, 1.50] · σ = sigmoid</span>
+      </div>
+
+      {/* RAG thresholds */}
+      <div style={{ fontWeight: 700, color: '#6a8099', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>RAG Thresholds</div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {[['Green', `< ${meta.ragThresholds?.yellow}`, '#00E676'], ['Yellow', `${meta.ragThresholds?.yellow}–${meta.ragThresholds?.red}`, '#FFD700'], ['Red', `≥ ${meta.ragThresholds?.red}`, '#FF4444']].map(([rag, thr, col]) => (
+          <div key={rag} style={{ flex: 1, textAlign: 'center', background: `${col}11`, border: `1px solid ${col}33`, borderRadius: 6, padding: '6px 4px' }}>
+            <div style={{ color: col, fontWeight: 700, fontSize: 12 }}>{rag}</div>
+            <div style={{ color: '#6a8099', fontSize: 9, marginTop: 2 }}>score {thr}</div>
+          </div>
+        ))}
+      </div>
+
+      <p style={{ fontSize: 9, color: '#2e4460', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 8, marginTop: 12, lineHeight: 1.6 }}>
+        Vulnerability model trained on SSEN NAFIRS HV SEPD data · Weather: Open-Meteo (ERA5) ·
+        Generated: {new Date(forecastData.generatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+      </p>
+    </div>
+  );
+}
+
+const TABS = ['Live', 'CML', 'History', 'Forecast', 'Model'];
 
 export default function FaultsPanel({
   isOpen, onClose, selectedSubstation,
@@ -165,13 +363,18 @@ export default function FaultsPanel({
     if (autoRefresh && isOpen) intervalRef.current = setInterval(fetchOutages, 60000);
     return () => clearInterval(intervalRef.current);
   }, [autoRefresh, isOpen, fetchOutages]);
-  useEffect(() => {
-    if (activeTab !== 'Forecast' || forecastData) return;
+  const loadForecast = useCallback(() => {
+    if (forecastData) return;
     setFcLoading(true); setFcError(null);
     fetchForecast()
       .then(d => { onForecastLoaded?.(d); setFcLoading(false); })
       .catch(e => { setFcError(e.message); setFcLoading(false); });
-  }, [activeTab, forecastData, onForecastLoaded]);
+  }, [forecastData, onForecastLoaded]);
+
+  useEffect(() => {
+    if (activeTab !== 'Forecast' && activeTab !== 'Model') return;
+    loadForecast();
+  }, [activeTab, loadForecast]);
 
   const handleLocate = useCallback(o => {
     if (o.latitude == null) return;
@@ -261,6 +464,9 @@ export default function FaultsPanel({
         )}
         {activeTab === 'Forecast' && (
           <ForecastContent forecastData={forecastData} forecastDay={forecastDay} onDayChange={onForecastDayChange} forecastOverlayActive={forecastOverlayActive} onOverlayToggle={onForecastOverlayChange} selectedSubstation={selectedSubstation} loading={fcLoading} error={fcError} />
+        )}
+        {activeTab === 'Model' && (
+          <ModelTab forecastData={forecastData} onFetchForecast={loadForecast} loading={fcLoading} error={fcError} />
         )}
       </div>
     </div>

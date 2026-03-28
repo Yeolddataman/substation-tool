@@ -435,6 +435,17 @@ body {
   background: rgba(79, 195, 247, 0.12);
 }
 
+.layer-btn--sub {
+  font-size: 11px;
+  padding: 6px 10px;
+  opacity: 0.8;
+  border-style: dashed;
+}
+.layer-btn--sub.layer-btn--active {
+  opacity: 1;
+  border-style: solid;
+}
+
 /* ── Map legend ──────────────────────────────────── */
 .map-legend {
   position: absolute;
