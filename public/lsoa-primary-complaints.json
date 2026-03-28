@@ -1,0 +1,4224 @@
+{
+  "meta": {
+    "generatedAt": "2026-03-28",
+    "method": "Geographic proxy — Census 2021 regional socioeconomic profiles",
+    "description": "Per-primary complaint propensity index, calibrated to Ofgem complaint rate data. Propensity > 1.0 = above-average complaint likelihood; < 1.0 = below average. Replace with full LSOA-level dataset by running process-lsoa-complaints.mjs.",
+    "baseRate": 0.0025,
+    "baseRateNote": "Complaints per customer per hour at propensity = 1.0",
+    "calibrationSource": "Ofgem Electricity Distribution Quality of Service Report 2024",
+    "coverage": 422,
+    "meanPropensity": 1.093
+  },
+  "primaries": {
+    "1000": {
+      "name": "Tongham Primary",
+      "lat": 51.23774,
+      "lng": -0.73639986,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.22,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "1001": {
+      "name": "Wrecclesham Primary",
+      "lat": 51.192144,
+      "lng": -0.8266165,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.162,
+      "meters": 43798,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "1002": {
+      "name": "Hitches Lane Primary",
+      "lat": 51.286525,
+      "lng": -0.86195584,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.222,
+      "meters": 34453,
+      "feederCount": 12,
+      "demandRAG": "Red"
+    },
+    "1003": {
+      "name": "Milford Primary",
+      "lat": 51.178561,
+      "lng": -0.64632756,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.176,
+      "meters": 30182,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "1004": {
+      "name": "Godalming Primary",
+      "lat": 51.190421,
+      "lng": -0.6170161,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.186,
+      "meters": 25159,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "1005": {
+      "name": "Farnham Primary",
+      "lat": 51.217907,
+      "lng": -0.79125349,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.193,
+      "meters": 15303,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "1006": {
+      "name": "Hawley Primary",
+      "lat": 51.311848,
+      "lng": -0.76789653,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.27,
+      "meters": 8630,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "1007": {
+      "name": "Normandy Primary",
+      "lat": 51.267587,
+      "lng": -0.66518648,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.254,
+      "meters": 1292,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "1008": {
+      "name": "Farnborough Primary",
+      "lat": 51.277666,
+      "lng": -0.73395721,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.253,
+      "meters": 682,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "1009": {
+      "name": "Frimley Primary",
+      "lat": 51.313835,
+      "lng": -0.74241777,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.277,
+      "meters": 1431,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "1010": {
+      "name": "Queensmead Primary",
+      "lat": 51.293632,
+      "lng": -0.75276547,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.261,
+      "meters": 179,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "1011": {
+      "name": "Cove Primary",
+      "lat": 51.296164,
+      "lng": -0.77631976,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.257,
+      "meters": 84,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "1014": {
+      "name": "Coxmoor Wood Primary",
+      "lat": 51.250818,
+      "lng": -0.87983124,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.191,
+      "meters": null,
+      "feederCount": 14,
+      "demandRAG": "Green"
+    },
+    "1015": {
+      "name": "Camberley Primary",
+      "lat": 51.327586,
+      "lng": -0.7587053,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.282,
+      "meters": 420,
+      "feederCount": 26,
+      "demandRAG": "31.73"
+    },
+    "1016": {
+      "name": "Aldershot Primary",
+      "lat": 51.232226,
+      "lng": -0.76998103,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.209,
+      "meters": null,
+      "feederCount": 20,
+      "demandRAG": "Red"
+    },
+    "1017": {
+      "name": "Farnboro Airfield Primary",
+      "lat": 51.28274,
+      "lng": -0.77060066,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.249,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "1019": {
+      "name": "Billingshurst Primary",
+      "lat": 51.026012,
+      "lng": -0.45704322,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 6,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "1300": {
+      "name": "Basingstoke Primary",
+      "lat": 51.269782,
+      "lng": -1.0674396,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.117,
+      "meters": null,
+      "feederCount": 25,
+      "demandRAG": "Green"
+    },
+    "1302": {
+      "name": "Brook Street Primary",
+      "lat": 51.265682,
+      "lng": -1.0915307,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.102,
+      "meters": 665,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "1303": {
+      "name": "Houndmills Primary",
+      "lat": 51.27174,
+      "lng": -1.1099464,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.096,
+      "meters": 776,
+      "feederCount": 8,
+      "demandRAG": "0.00"
+    },
+    "1304": {
+      "name": "Herriard Primary",
+      "lat": 51.200071,
+      "lng": -1.0457323,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.089,
+      "meters": 573,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "1305": {
+      "name": "Preston Candover Primary",
+      "lat": 51.166193,
+      "lng": -1.1306863,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.035,
+      "meters": 478,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "1306": {
+      "name": "Bramley Green Primary",
+      "lat": 51.321716,
+      "lng": -1.033725,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.158,
+      "meters": 296,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "1308": {
+      "name": "Alton Local Primary",
+      "lat": 51.151139,
+      "lng": -0.96575932,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.087,
+      "meters": 11,
+      "feederCount": 12,
+      "demandRAG": "18.47"
+    },
+    "1310": {
+      "name": "Hook Primary",
+      "lat": 51.278548,
+      "lng": -0.96049275,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.175,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "1311": {
+      "name": "Alresford Primary",
+      "lat": 51.088816,
+      "lng": -1.1491999,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 0.99,
+      "meters": 16,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "1312": {
+      "name": "Down Grange Primary",
+      "lat": 51.247996,
+      "lng": -1.1187578,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.081,
+      "meters": 45,
+      "feederCount": 12,
+      "demandRAG": "Green"
+    },
+    "1313": {
+      "name": "Overton Primary",
+      "lat": 51.255014,
+      "lng": -1.2553727,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.022,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "1316": {
+      "name": "Chineham Primary",
+      "lat": 51.297658,
+      "lng": -1.0675922,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.13,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "1317": {
+      "name": "Jays Close Primary",
+      "lat": 51.246642,
+      "lng": -1.0979948,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.09,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "1600": {
+      "name": "Hindhead Primary",
+      "lat": 51.120751,
+      "lng": -0.7350071,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.118,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "1601": {
+      "name": "Plaistow Primary",
+      "lat": 51.056914,
+      "lng": -0.54497086,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.066,
+      "meters": 534,
+      "feederCount": 7,
+      "demandRAG": "Amber"
+    },
+    "1603": {
+      "name": "Five Oaks Primary",
+      "lat": 51.050213,
+      "lng": -0.42282521,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.047,
+      "meters": 326,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "1604": {
+      "name": "Midhurst Primary",
+      "lat": 50.968682,
+      "lng": -0.74631968,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.003,
+      "meters": 184,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "1605": {
+      "name": "Langley Court Primary",
+      "lat": 51.055166,
+      "lng": -0.84785962,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.047,
+      "meters": 410,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "1606": {
+      "name": "Bordon Primary",
+      "lat": 51.110823,
+      "lng": -0.82634825,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.094,
+      "meters": 203,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "1607": {
+      "name": "Petersfield Primary",
+      "lat": 51.005395,
+      "lng": -0.94421714,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 0.996,
+      "meters": 11,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "1608": {
+      "name": "Haslemere Primary",
+      "lat": 51.077775,
+      "lng": -0.72662903,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.082,
+      "meters": 12,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "1901": {
+      "name": "Cordwallis Primary",
+      "lat": 51.528732,
+      "lng": -0.72872194,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.313,
+      "meters": 63,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "1902": {
+      "name": "Cokes Lane Primary",
+      "lat": 51.66737,
+      "lng": -0.56643504,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.227,
+      "meters": 97,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "1904": {
+      "name": "Knowl Hill Primary",
+      "lat": 51.504816,
+      "lng": -0.80771168,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.297,
+      "meters": 24,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "1905": {
+      "name": "Clarence Road Primary",
+      "lat": 51.480746,
+      "lng": -0.62393586,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.337,
+      "meters": 30,
+      "feederCount": 11,
+      "demandRAG": "Red"
+    },
+    "1906": {
+      "name": "Braywick Road Primary",
+      "lat": 51.518471,
+      "lng": -0.72033112,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.318,
+      "meters": 82,
+      "feederCount": 11,
+      "demandRAG": "Green"
+    },
+    "1908": {
+      "name": "Petersfield Avenue Primary",
+      "lat": 51.512992,
+      "lng": -0.58759947,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.328,
+      "meters": null,
+      "feederCount": 11,
+      "demandRAG": "Red"
+    },
+    "1909": {
+      "name": "Poyle Primary",
+      "lat": 51.46952,
+      "lng": -0.51239019,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.326,
+      "meters": 38,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "1910": {
+      "name": "Chalvey Primary",
+      "lat": 51.504952,
+      "lng": -0.60858214,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.332,
+      "meters": null,
+      "feederCount": 23,
+      "demandRAG": "Red"
+    },
+    "1911": {
+      "name": "Temple Farm Primary",
+      "lat": 51.547472,
+      "lng": -0.78743054,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.289,
+      "meters": null,
+      "feederCount": 2,
+      "demandRAG": "Green"
+    },
+    "1913": {
+      "name": "Harefield Primary",
+      "lat": 51.61028,
+      "lng": -0.49947511,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.263,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "1914": {
+      "name": "Denham Avenue Primary",
+      "lat": 51.568618,
+      "lng": -0.50430999,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.292,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "1916": {
+      "name": "Taplow Primary",
+      "lat": 51.522585,
+      "lng": -0.67936622,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.323,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "1917": {
+      "name": "Sutton Lane Primary",
+      "lat": 51.49707,
+      "lng": -0.52935732,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.325,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "1918": {
+      "name": "Maidenhead Primary",
+      "lat": 51.510519,
+      "lng": -0.75516733,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.312,
+      "meters": null,
+      "feederCount": 17,
+      "demandRAG": "Green"
+    },
+    "1919": {
+      "name": "Gerrards Cross Primary",
+      "lat": 51.581679,
+      "lng": -0.5585536,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.293,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "1920": {
+      "name": "Upton Primary",
+      "lat": 51.50486,
+      "lng": -0.54906267,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.326,
+      "meters": null,
+      "feederCount": 11,
+      "demandRAG": "0.00"
+    },
+    "1921": {
+      "name": "Farnham Royal Primary",
+      "lat": 51.536415,
+      "lng": -0.62307975,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.321,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "1922": {
+      "name": "Grassingham Road Primary",
+      "lat": 51.608826,
+      "lng": -0.55492123,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.273,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "0.00"
+    },
+    "2200": {
+      "name": "Sunninghill Primary",
+      "lat": 51.399749,
+      "lng": -0.65363807,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.331,
+      "meters": null,
+      "feederCount": 15,
+      "demandRAG": "Green"
+    },
+    "2201": {
+      "name": "Elms Road Primary",
+      "lat": 51.410027,
+      "lng": -0.83594476,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.289,
+      "meters": 810,
+      "feederCount": 13,
+      "demandRAG": "Green"
+    },
+    "2202": {
+      "name": "Ascot Primary",
+      "lat": 51.411326,
+      "lng": -0.68409816,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.331,
+      "meters": 511,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "2203": {
+      "name": "Bracknell Primary",
+      "lat": 51.417065,
+      "lng": -0.76360335,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.315,
+      "meters": 417,
+      "feederCount": 24,
+      "demandRAG": "Green"
+    },
+    "2204": {
+      "name": "Warfield Primary",
+      "lat": 51.434774,
+      "lng": -0.75039344,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.322,
+      "meters": 470,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "2205": {
+      "name": "Crowthorne Primary",
+      "lat": 51.371953,
+      "lng": -0.78787716,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.295,
+      "meters": 297,
+      "feederCount": 13,
+      "demandRAG": "Green"
+    },
+    "2206": {
+      "name": "Sandhurst Primary",
+      "lat": 51.34132,
+      "lng": -0.80121898,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.277,
+      "meters": 114,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "2207": {
+      "name": "Chobham Primary",
+      "lat": 51.359776,
+      "lng": -0.60574616,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.316,
+      "meters": 5,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "2208": {
+      "name": "Kings Ride Primary",
+      "lat": 51.346119,
+      "lng": -0.74431997,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.295,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "2210": {
+      "name": "Easthampstead Primary",
+      "lat": 51.39725,
+      "lng": -0.76308822,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.311,
+      "meters": 7,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "2211": {
+      "name": "Bagshot Primary",
+      "lat": 51.363474,
+      "lng": -0.69255137,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.314,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "2212": {
+      "name": "Egham Primary",
+      "lat": 51.43264,
+      "lng": -0.54804278,
+      "gspArea": "LALEHAM",
+      "propensityIndex": 1.333,
+      "meters": 57,
+      "feederCount": 10,
+      "demandRAG": "Green"
+    },
+    "2214": {
+      "name": "Peacock Farm Primary",
+      "lat": 51.411076,
+      "lng": -0.78252935,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.309,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "2215": {
+      "name": "Wokingham Primary",
+      "lat": 51.402441,
+      "lng": -0.85724149,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.278,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Green"
+    },
+    "2500": {
+      "name": "Greenford Primary",
+      "lat": 51.541366,
+      "lng": -0.34763145,
+      "gspArea": "WILLESDEN",
+      "propensityIndex": 1.257,
+      "meters": null,
+      "feederCount": 11,
+      "demandRAG": "0.00"
+    },
+    "2501": {
+      "name": "Southfield Road Primary",
+      "lat": 51.503804,
+      "lng": -0.26477119,
+      "gspArea": "EALING",
+      "propensityIndex": 1.234,
+      "meters": 6962,
+      "feederCount": 18,
+      "demandRAG": "0.00"
+    },
+    "2503": {
+      "name": "Leamington Park Primary",
+      "lat": 51.51989,
+      "lng": -0.26407339,
+      "gspArea": "WILLESDEN",
+      "propensityIndex": 1.23,
+      "meters": 6695,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "2504": {
+      "name": "The Green Primary",
+      "lat": 51.503292,
+      "lng": -0.38177388,
+      "gspArea": "NORTH HYDE",
+      "propensityIndex": 1.282,
+      "meters": 4799,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "2505": {
+      "name": "Dean Gardens Primary",
+      "lat": 51.51023,
+      "lng": -0.32198298,
+      "gspArea": "EALING",
+      "propensityIndex": 1.256,
+      "meters": 3295,
+      "feederCount": 1,
+      "demandRAG": "Green"
+    },
+    "2506": {
+      "name": "Goldsmiths Primary",
+      "lat": 51.512781,
+      "lng": -0.25641724,
+      "gspArea": "WILLESDEN",
+      "propensityIndex": 1.228,
+      "meters": 2379,
+      "feederCount": 3,
+      "demandRAG": "Red"
+    },
+    "2507": {
+      "name": "Park Royal Primary",
+      "lat": 51.526078,
+      "lng": -0.26963324,
+      "gspArea": "WILLESDEN",
+      "propensityIndex": 1.23,
+      "meters": 298,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "2508": {
+      "name": "Boston Manor Primary",
+      "lat": 51.489672,
+      "lng": -0.31557893,
+      "gspArea": "EALING",
+      "propensityIndex": 1.258,
+      "meters": 318,
+      "feederCount": 5,
+      "demandRAG": "Amber"
+    },
+    "2511": {
+      "name": "Harvard lane Primary",
+      "lat": 51.488491,
+      "lng": -0.27272747,
+      "gspArea": "EALING",
+      "propensityIndex": 1.239,
+      "meters": 58,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "2512": {
+      "name": "Brentford Primary",
+      "lat": 51.491207,
+      "lng": -0.30664901,
+      "gspArea": "EALING",
+      "propensityIndex": 1.253,
+      "meters": 428,
+      "feederCount": 9,
+      "demandRAG": "9.46"
+    },
+    "2513": {
+      "name": "Springfield Road Primary",
+      "lat": 51.51353,
+      "lng": -0.39589488,
+      "gspArea": "NORTH HYDE",
+      "propensityIndex": 1.283,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "0.00"
+    },
+    "2517": {
+      "name": "Hillingdon Primary",
+      "lat": 51.534129,
+      "lng": -0.451964,
+      "gspArea": "IVER 66",
+      "propensityIndex": 1.295,
+      "meters": null,
+      "feederCount": 14,
+      "demandRAG": "Green"
+    },
+    "2518": {
+      "name": "Northolt Primary",
+      "lat": 51.536961,
+      "lng": -0.39303821,
+      "gspArea": "IVER 66",
+      "propensityIndex": 1.275,
+      "meters": 63,
+      "feederCount": 12,
+      "demandRAG": "Red"
+    },
+    "2520": {
+      "name": "Uxbridge Primary",
+      "lat": 51.540502,
+      "lng": -0.48759615,
+      "gspArea": "IVER 66",
+      "propensityIndex": 1.302,
+      "meters": null,
+      "feederCount": 17,
+      "demandRAG": "10.17"
+    },
+    "2521": {
+      "name": "Hayes Primary",
+      "lat": 51.504201,
+      "lng": -0.42345496,
+      "gspArea": "NORTH HYDE",
+      "propensityIndex": 1.296,
+      "meters": 75,
+      "feederCount": 18,
+      "demandRAG": "0.00"
+    },
+    "2522": {
+      "name": "Copley Dene Primary",
+      "lat": 51.513909,
+      "lng": -0.30889148,
+      "gspArea": "EALING",
+      "propensityIndex": 1.25,
+      "meters": null,
+      "feederCount": 13,
+      "demandRAG": "Red"
+    },
+    "2524": {
+      "name": "Perivale Primary",
+      "lat": 51.533202,
+      "lng": -0.3067492,
+      "gspArea": "WILLESDEN",
+      "propensityIndex": 1.243,
+      "meters": null,
+      "feederCount": 13,
+      "demandRAG": "Red"
+    },
+    "2526": {
+      "name": "Ealing Primary",
+      "lat": 51.501825,
+      "lng": -0.29599686,
+      "gspArea": "EALING",
+      "propensityIndex": 1.247,
+      "meters": null,
+      "feederCount": 23,
+      "demandRAG": "0.00"
+    },
+    "2528": {
+      "name": "Ironbridge Primary",
+      "lat": 51.508933,
+      "lng": -0.35546261,
+      "gspArea": "EALING",
+      "propensityIndex": 1.27,
+      "meters": null,
+      "feederCount": 14,
+      "demandRAG": "Amber"
+    },
+    "2803": {
+      "name": "Sunbury Cross Primary",
+      "lat": 51.418306,
+      "lng": -0.41873203,
+      "gspArea": "LALEHAM",
+      "propensityIndex": 1.296,
+      "meters": 523,
+      "feederCount": 15,
+      "demandRAG": "18.99"
+    },
+    "2804": {
+      "name": "Hope And Anchor Primary",
+      "lat": 51.436309,
+      "lng": -0.37988329,
+      "gspArea": "LALEHAM",
+      "propensityIndex": 1.284,
+      "meters": 349,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "2805": {
+      "name": "Bath Road East Primary",
+      "lat": 51.48041,
+      "lng": -0.43035272,
+      "gspArea": "NORTH HYDE",
+      "propensityIndex": 1.303,
+      "meters": 195,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "2807": {
+      "name": "Church Road Primary",
+      "lat": 51.434438,
+      "lng": -0.46468734,
+      "gspArea": "LALEHAM",
+      "propensityIndex": 1.314,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "2808": {
+      "name": "North Feltham Primary",
+      "lat": 51.461977,
+      "lng": -0.40377787,
+      "gspArea": "LALEHAM",
+      "propensityIndex": 1.294,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "2809": {
+      "name": "Feltham Primary",
+      "lat": 51.443496,
+      "lng": -0.40958817,
+      "gspArea": "LALEHAM",
+      "propensityIndex": 1.296,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "8.72"
+    },
+    "2810": {
+      "name": "Causeway Primary",
+      "lat": 51.43481,
+      "lng": -0.52304188,
+      "gspArea": "LALEHAM",
+      "propensityIndex": 1.328,
+      "meters": null,
+      "feederCount": 11,
+      "demandRAG": "Green"
+    },
+    "2811": {
+      "name": "Sidney Road Primary",
+      "lat": 51.435285,
+      "lng": -0.50379132,
+      "gspArea": "LALEHAM",
+      "propensityIndex": 1.325,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "2812": {
+      "name": "Stanwell Primary",
+      "lat": 51.443975,
+      "lng": -0.47612389,
+      "gspArea": "LALEHAM",
+      "propensityIndex": 1.318,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "2813": {
+      "name": "Bath Road West Primary",
+      "lat": 51.480449,
+      "lng": -0.47763041,
+      "gspArea": "IVER 132",
+      "propensityIndex": 1.316,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "2818": {
+      "name": "Vicarage Farm Road Primary",
+      "lat": 51.475728,
+      "lng": -0.38355585,
+      "gspArea": "NORTH HYDE",
+      "propensityIndex": 1.286,
+      "meters": null,
+      "feederCount": 11,
+      "demandRAG": "Red"
+    },
+    "2820": {
+      "name": "Yiewsley Primary",
+      "lat": 51.517702,
+      "lng": -0.47885336,
+      "gspArea": "IVER 66",
+      "propensityIndex": 1.308,
+      "meters": null,
+      "feederCount": 15,
+      "demandRAG": "18.96"
+    },
+    "2822": {
+      "name": "Bridge Road Primary",
+      "lat": 51.469005,
+      "lng": -0.34895102,
+      "gspArea": "EALING",
+      "propensityIndex": 1.273,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "23.50"
+    },
+    "3101": {
+      "name": "Bromham Primary",
+      "lat": 51.392983,
+      "lng": -2.0205036,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.907,
+      "meters": 234,
+      "feederCount": 3,
+      "demandRAG": "Red"
+    },
+    "3102": {
+      "name": "Trowbridge Town Primary",
+      "lat": 51.321219,
+      "lng": -2.2214012,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.901,
+      "meters": 159,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "3103": {
+      "name": "Hawkeridge Primary",
+      "lat": 51.276215,
+      "lng": -2.196039,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.896,
+      "meters": 164,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "3104": {
+      "name": "Devizes Primary",
+      "lat": 51.347954,
+      "lng": -1.9998646,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.904,
+      "meters": 162,
+      "feederCount": 12,
+      "demandRAG": "Red"
+    },
+    "3105": {
+      "name": "Corsham Primary",
+      "lat": 51.425098,
+      "lng": -2.1917286,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.908,
+      "meters": 95,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "3106": {
+      "name": "Easterton Primary",
+      "lat": 51.2917,
+      "lng": -1.9788981,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.897,
+      "meters": 63,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "3107": {
+      "name": "Holwell Primary",
+      "lat": 51.200229,
+      "lng": -2.3993971,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.894,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Amber"
+    },
+    "3108": {
+      "name": "Sutton Benger Primary",
+      "lat": 51.519338,
+      "lng": -2.0966001,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.913,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "3109": {
+      "name": "Calne Primary",
+      "lat": 51.451457,
+      "lng": -1.9938927,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.911,
+      "meters": 9,
+      "feederCount": 12,
+      "demandRAG": "Red"
+    },
+    "3110": {
+      "name": "Melksham Town Primary",
+      "lat": 51.375831,
+      "lng": -2.1426167,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.906,
+      "meters": null,
+      "feederCount": 14,
+      "demandRAG": "Red"
+    },
+    "3111": {
+      "name": "Rowden Primary",
+      "lat": 51.452378,
+      "lng": -2.1337171,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.91,
+      "meters": 15,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "3112": {
+      "name": "Codford Primary",
+      "lat": 51.155279,
+      "lng": -2.0389563,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.874,
+      "meters": 33,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "3113": {
+      "name": "Yatton Keynell Primary",
+      "lat": 51.480849,
+      "lng": -2.184273,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.911,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "3116": {
+      "name": "Malmesbury Primary",
+      "lat": 51.586238,
+      "lng": -2.1127057,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.914,
+      "meters": null,
+      "feederCount": 14,
+      "demandRAG": "Red"
+    },
+    "3117": {
+      "name": "Spring Quarry West Primary",
+      "lat": 51.41725,
+      "lng": -2.2261794,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.908,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "3118": {
+      "name": "Westbury Primary",
+      "lat": 51.262792,
+      "lng": -2.178325,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.895,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "3119": {
+      "name": "Bradford-On-Avon Primary",
+      "lat": 51.343847,
+      "lng": -2.2704395,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.904,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "3121": {
+      "name": "Tetbury Primary",
+      "lat": 51.639703,
+      "lng": -2.1501205,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.915,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "3122": {
+      "name": "Ashton Park Primary",
+      "lat": 51.318628,
+      "lng": -2.1859029,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.901,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "3123": {
+      "name": "Alderton Primary",
+      "lat": 51.555203,
+      "lng": -2.2233876,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.913,
+      "meters": null,
+      "feederCount": 2,
+      "demandRAG": "Red"
+    },
+    "3124": {
+      "name": "Cocklebury Primary",
+      "lat": 51.46393,
+      "lng": -2.1101146,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.91,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "3125": {
+      "name": "Lyneham Primary",
+      "lat": 51.523244,
+      "lng": -2.0107905,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.914,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "3126": {
+      "name": "Crockerton Primary",
+      "lat": 51.189429,
+      "lng": -2.1768679,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.884,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "3127": {
+      "name": "Warminster Primary",
+      "lat": 51.199972,
+      "lng": -2.216983,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.886,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3128": {
+      "name": "Frome Primary",
+      "lat": 51.231249,
+      "lng": -2.3042947,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.894,
+      "meters": null,
+      "feederCount": 20,
+      "demandRAG": "12.71"
+    },
+    "3400": {
+      "name": "Shrivenham Primary",
+      "lat": 51.589473,
+      "lng": -1.6581151,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.934,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3401": {
+      "name": "Manchester Road Primary",
+      "lat": 51.564843,
+      "lng": -1.7813304,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.923,
+      "meters": 476,
+      "feederCount": 12,
+      "demandRAG": "Green"
+    },
+    "3402": {
+      "name": "Chisledon Primary",
+      "lat": 51.518014,
+      "lng": -1.7290952,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.927,
+      "meters": 515,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "3403": {
+      "name": "Dorcan South Primary",
+      "lat": 51.550424,
+      "lng": -1.7232207,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.928,
+      "meters": 241,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3405": {
+      "name": "Trading Estate Primary",
+      "lat": 51.571523,
+      "lng": -1.8067507,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.921,
+      "meters": 99,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "3407": {
+      "name": "Shipton Oliffe Primary",
+      "lat": 51.87048,
+      "lng": -1.9449936,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.916,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "3408": {
+      "name": "Stanton Fitzwarren Primary",
+      "lat": 51.617437,
+      "lng": -1.7474106,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.925,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Amber"
+    },
+    "3409": {
+      "name": "Wroughton Primary",
+      "lat": 51.532261,
+      "lng": -1.7931348,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.922,
+      "meters": 7,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "3411": {
+      "name": "Stratton Primary",
+      "lat": 51.598124,
+      "lng": -1.7559923,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.925,
+      "meters": null,
+      "feederCount": 19,
+      "demandRAG": "Red"
+    },
+    "3412": {
+      "name": "Cricklade Primary",
+      "lat": 51.638158,
+      "lng": -1.8655681,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.918,
+      "meters": 19,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "3413": {
+      "name": "Lechlade Primary",
+      "lat": 51.702776,
+      "lng": -1.6819781,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.928,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3415": {
+      "name": "Minety Village Primary",
+      "lat": 51.626203,
+      "lng": -1.9776039,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.916,
+      "meters": 8,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "3416": {
+      "name": "Quarry Road Primary",
+      "lat": 51.549106,
+      "lng": -1.780252,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.923,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "3417": {
+      "name": "Toothill Primary",
+      "lat": 51.554608,
+      "lng": -1.8107888,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.921,
+      "meters": null,
+      "feederCount": 14,
+      "demandRAG": "Green"
+    },
+    "3418": {
+      "name": "Wootton Bassett Primary",
+      "lat": 51.528968,
+      "lng": -1.8920243,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.917,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "3419": {
+      "name": "Kemble RAF Primary",
+      "lat": 51.662648,
+      "lng": -2.0581563,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.915,
+      "meters": null,
+      "feederCount": 1,
+      "demandRAG": "Green"
+    },
+    "3420": {
+      "name": "Swindon Primary",
+      "lat": 51.581428,
+      "lng": -1.8217324,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.92,
+      "meters": null,
+      "feederCount": 26,
+      "demandRAG": "Green"
+    },
+    "3421": {
+      "name": "Drakes Way Primary",
+      "lat": 51.569444,
+      "lng": -1.7575741,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.925,
+      "meters": null,
+      "feederCount": 2,
+      "demandRAG": "Green"
+    },
+    "3422": {
+      "name": "Cirencester Town Primary",
+      "lat": 51.706175,
+      "lng": -1.9614436,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.917,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "3423": {
+      "name": "Whiteway Primary",
+      "lat": 51.726246,
+      "lng": -1.9713441,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.917,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3424": {
+      "name": "Northleach Primary",
+      "lat": 51.82678,
+      "lng": -1.8482202,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.917,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "3425": {
+      "name": "Fairford Primary",
+      "lat": 51.70359,
+      "lng": -1.7927605,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.921,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "3426": {
+      "name": "Park North Primary",
+      "lat": 51.559474,
+      "lng": -1.7409951,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.926,
+      "meters": null,
+      "feederCount": 11,
+      "demandRAG": "Green"
+    },
+    "3427": {
+      "name": "Galileo Primary",
+      "lat": 51.552387,
+      "lng": -1.848571,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.919,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3700": {
+      "name": "Andover Primary",
+      "lat": 51.217904,
+      "lng": -1.4968164,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.935,
+      "meters": null,
+      "feederCount": 18,
+      "demandRAG": "Green"
+    },
+    "3701": {
+      "name": "Thatcham Primary",
+      "lat": 51.394786,
+      "lng": -1.2430882,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 1.061,
+      "meters": 573,
+      "feederCount": 27,
+      "demandRAG": "Amber"
+    },
+    "3702": {
+      "name": "Ramsbury Primary",
+      "lat": 51.447303,
+      "lng": -1.6074032,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.94,
+      "meters": 568,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "3703": {
+      "name": "Houghton Primary",
+      "lat": 51.083998,
+      "lng": -1.5190566,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.898,
+      "meters": 718,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "3704": {
+      "name": "West Grafton Village Primary",
+      "lat": 51.341068,
+      "lng": -1.6476615,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.926,
+      "meters": 380,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "3705": {
+      "name": "Whitchurch Primary",
+      "lat": 51.233538,
+      "lng": -1.3436196,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.982,
+      "meters": 248,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "3706": {
+      "name": "St Johns Primary",
+      "lat": 51.394356,
+      "lng": -1.324232,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 1.023,
+      "meters": 174,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "3707": {
+      "name": "Riverside Primary",
+      "lat": 51.401703,
+      "lng": -1.3135866,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 1.028,
+      "meters": 26,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "3708": {
+      "name": "Enford Primary",
+      "lat": 51.264402,
+      "lng": -1.8046286,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 0.9,
+      "meters": 19,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "3709": {
+      "name": "Middle Wallop Primary",
+      "lat": 51.159812,
+      "lng": -1.5583093,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.91,
+      "meters": 79,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "3710": {
+      "name": "Yattendon Primary",
+      "lat": 51.465194,
+      "lng": -1.2283782,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 1.073,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "3711": {
+      "name": "Hungerford Primary",
+      "lat": 51.41861,
+      "lng": -1.5114998,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 0.96,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "3713": {
+      "name": "Pewsey Primary",
+      "lat": 51.332175,
+      "lng": -1.7902459,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 0.91,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "5.21"
+    },
+    "3714": {
+      "name": "Leckhampstead Primary",
+      "lat": 51.495955,
+      "lng": -1.3681218,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 1.007,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "3715": {
+      "name": "Thruxton Primary",
+      "lat": 51.209534,
+      "lng": -1.5843176,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.916,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3716": {
+      "name": "Kingsclere Primary",
+      "lat": 51.33095,
+      "lng": -1.2552777,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 1.044,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "3717": {
+      "name": "Love Lane Primary",
+      "lat": 51.413506,
+      "lng": -1.320772,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 1.026,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Green"
+    },
+    "3718": {
+      "name": "Tidworth Primary",
+      "lat": 51.245007,
+      "lng": -1.6562893,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.911,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "3719": {
+      "name": "Barton Stacey Primary",
+      "lat": 51.182169,
+      "lng": -1.399417,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.95,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "3720": {
+      "name": "Andover East Primary",
+      "lat": 51.215843,
+      "lng": -1.4579957,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.943,
+      "meters": null,
+      "feederCount": 13,
+      "demandRAG": "Green"
+    },
+    "3721": {
+      "name": "Lambourn Primary",
+      "lat": 51.501915,
+      "lng": -1.521934,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 0.96,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3722": {
+      "name": "Portway Primary",
+      "lat": 51.212183,
+      "lng": -1.5088758,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.931,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "3723": {
+      "name": "Kintbury Primary",
+      "lat": 51.402073,
+      "lng": -1.4600535,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 0.973,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3724": {
+      "name": "Hurstbourne Tarrant Primary",
+      "lat": 51.270081,
+      "lng": -1.4368458,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.961,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "3725": {
+      "name": "Marlborough South Primary",
+      "lat": 51.413071,
+      "lng": -1.7239782,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.923,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "3726": {
+      "name": "Andover Town Primary",
+      "lat": 51.203772,
+      "lng": -1.483129,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.935,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4001": {
+      "name": "Flackwell Heath Primary",
+      "lat": 51.595422,
+      "lng": -0.69247181,
+      "gspArea": "AMERSHAM",
+      "propensityIndex": 1.282,
+      "meters": 74837,
+      "feederCount": 12,
+      "demandRAG": "Red"
+    },
+    "4002": {
+      "name": "High Wycombe Town Primary",
+      "lat": 51.628953,
+      "lng": -0.7545438,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.247,
+      "meters": 61368,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "4003": {
+      "name": "Cholsey Primary",
+      "lat": 51.558051,
+      "lng": -1.1615505,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.097,
+      "meters": 57296,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "4004": {
+      "name": "Caversham Primary",
+      "lat": 51.476173,
+      "lng": -0.9717028,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.222,
+      "meters": 43860,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "4005": {
+      "name": "Stokenchurch Primary",
+      "lat": 51.642717,
+      "lng": -0.88683647,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.195,
+      "meters": 22702,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "4006": {
+      "name": "Wallingford Primary",
+      "lat": 51.601044,
+      "lng": -1.1373111,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.097,
+      "meters": 10921,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4007": {
+      "name": "Watlington Primary",
+      "lat": 51.643147,
+      "lng": -1.0027024,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.144,
+      "meters": 1913,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "4008": {
+      "name": "Fryers Lane Primary",
+      "lat": 51.637261,
+      "lng": -0.77409884,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.236,
+      "meters": 931,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "4009": {
+      "name": "Wycombe Marsh Primary",
+      "lat": 51.618469,
+      "lng": -0.72192637,
+      "gspArea": "AMERSHAM",
+      "propensityIndex": 1.261,
+      "meters": 805,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "4010": {
+      "name": "Well End Primary",
+      "lat": 51.583531,
+      "lng": -0.7239315,
+      "gspArea": "AMERSHAM",
+      "propensityIndex": 1.285,
+      "meters": 237,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "4011": {
+      "name": "Berinsfield Primary",
+      "lat": 51.654969,
+      "lng": -1.1574654,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.067,
+      "meters": 94,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "4012": {
+      "name": "Nuffield Primary",
+      "lat": 51.57579,
+      "lng": -1.0153895,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.171,
+      "meters": 345,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "4013": {
+      "name": "Chisbridge Primary",
+      "lat": 51.595539,
+      "lng": -0.84320641,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.243,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4014": {
+      "name": "High Wycombe Primary",
+      "lat": 51.622252,
+      "lng": -0.77742129,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.246,
+      "meters": null,
+      "feederCount": 14,
+      "demandRAG": "Green"
+    },
+    "4015": {
+      "name": "Bowerdean Primary",
+      "lat": 51.636897,
+      "lng": -0.73389355,
+      "gspArea": "AMERSHAM",
+      "propensityIndex": 1.245,
+      "meters": 203,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "4016": {
+      "name": "Little Marlow Primary",
+      "lat": 51.582448,
+      "lng": -0.75966907,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.278,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "4017": {
+      "name": "Henley Primary",
+      "lat": 51.535587,
+      "lng": -0.90464784,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.245,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4018": {
+      "name": "Kidmore End Primary",
+      "lat": 51.498466,
+      "lng": -0.99366056,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.207,
+      "meters": 65,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "4019": {
+      "name": "Woodcote Primary",
+      "lat": 51.529859,
+      "lng": -1.0726605,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.153,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4020": {
+      "name": "Goring Primary",
+      "lat": 51.54174,
+      "lng": -1.1318284,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.117,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "4300": {
+      "name": "Trash Green Primary",
+      "lat": 51.413862,
+      "lng": -1.0487087,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.175,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "4301": {
+      "name": "Beenham Primary",
+      "lat": 51.417262,
+      "lng": -1.1644013,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 1.107,
+      "meters": 492,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "4302": {
+      "name": "Whitley Wood Primary",
+      "lat": 51.421348,
+      "lng": -0.95423686,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.231,
+      "meters": 343,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "4305": {
+      "name": "Twyford Primary",
+      "lat": 51.48058,
+      "lng": -0.87198034,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.274,
+      "meters": 234,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "4306": {
+      "name": "Southcote Primary",
+      "lat": 51.436827,
+      "lng": -1.0202497,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.195,
+      "meters": 44,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "4307": {
+      "name": "Silver Street Primary",
+      "lat": 51.449812,
+      "lng": -0.96589104,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.227,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "4308": {
+      "name": "Mortimer Primary",
+      "lat": 51.372583,
+      "lng": -1.107289,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.132,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "4309": {
+      "name": "Tadley Primary",
+      "lat": 51.360594,
+      "lng": -1.1719102,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 1.093,
+      "meters": 34,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4310": {
+      "name": "Pangbourne Primary",
+      "lat": 51.480757,
+      "lng": -1.0947532,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.149,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "4311": {
+      "name": "Courages Primary",
+      "lat": 51.420707,
+      "lng": -0.98045501,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.217,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4312": {
+      "name": "Kentwood Hill Primary",
+      "lat": 51.461438,
+      "lng": -1.0355136,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.185,
+      "meters": 67,
+      "feederCount": 10,
+      "demandRAG": "Green"
+    },
+    "4313": {
+      "name": "Theale Primary",
+      "lat": 51.434443,
+      "lng": -1.0698459,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.164,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4314": {
+      "name": "Padworth Primary",
+      "lat": 51.390105,
+      "lng": -1.1068476,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.137,
+      "meters": null,
+      "feederCount": 2,
+      "demandRAG": "Green"
+    },
+    "4315": {
+      "name": "Wilson Road Primary",
+      "lat": 51.454493,
+      "lng": -1.0049612,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.204,
+      "meters": 8,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4316": {
+      "name": "Northumberland Avenue Primary",
+      "lat": 51.434236,
+      "lng": -0.96264619,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.228,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4317": {
+      "name": "Arborfield Primary",
+      "lat": 51.385867,
+      "lng": -0.90996432,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.249,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4318": {
+      "name": "Little Hungerford Primary",
+      "lat": 51.442159,
+      "lng": -0.91692717,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.254,
+      "meters": null,
+      "feederCount": 13,
+      "demandRAG": "Red"
+    },
+    "4319": {
+      "name": "Reading Town Primary",
+      "lat": 51.461561,
+      "lng": -0.97162812,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.223,
+      "meters": null,
+      "feederCount": 19,
+      "demandRAG": "52.74"
+    },
+    "4320": {
+      "name": "Reading Primary",
+      "lat": 51.458165,
+      "lng": -0.92778979,
+      "gspArea": "BRAMLEY (BASI)",
+      "propensityIndex": 1.248,
+      "meters": null,
+      "feederCount": 33,
+      "demandRAG": "Red"
+    },
+    "4321": {
+      "name": "The Mall Primary",
+      "lat": 51.454136,
+      "lng": -0.97497561,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.222,
+      "meters": 15,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "4325": {
+      "name": "Green Park Primary",
+      "lat": 51.424681,
+      "lng": -1.0006598,
+      "gspArea": "BRAMLEY (FLEE)",
+      "propensityIndex": 1.206,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4600": {
+      "name": "Cowley Local Primary",
+      "lat": 51.723588,
+      "lng": -1.1890402,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.027,
+      "meters": null,
+      "feederCount": 21,
+      "demandRAG": "Red"
+    },
+    "4601": {
+      "name": "Charlbury Primary",
+      "lat": 51.862809,
+      "lng": -1.478127,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.935,
+      "meters": 428,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "4602": {
+      "name": "Yarnton Primary",
+      "lat": 51.805535,
+      "lng": -1.3012215,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.97,
+      "meters": 139,
+      "feederCount": 20,
+      "demandRAG": "Red"
+    },
+    "4603": {
+      "name": "Headington Primary",
+      "lat": 51.768803,
+      "lng": -1.2124754,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.003,
+      "meters": 234,
+      "feederCount": 16,
+      "demandRAG": "Green"
+    },
+    "4604": {
+      "name": "Woodstock Primary",
+      "lat": 51.853959,
+      "lng": -1.3510276,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.951,
+      "meters": 117,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "4605": {
+      "name": "Bicester Primary",
+      "lat": 51.893394,
+      "lng": -1.1530295,
+      "gspArea": "EAST CLAYDON",
+      "propensityIndex": 0.972,
+      "meters": 46,
+      "feederCount": 21,
+      "demandRAG": "Red"
+    },
+    "4606": {
+      "name": "Deddington Primary",
+      "lat": 51.969442,
+      "lng": -1.3212094,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.935,
+      "meters": 112,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "4607": {
+      "name": "Union Street Primary",
+      "lat": 51.748851,
+      "lng": -1.2356369,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.003,
+      "meters": 18,
+      "feederCount": 9,
+      "demandRAG": "5.93"
+    },
+    "4608": {
+      "name": "Rissington Primary",
+      "lat": 51.87431,
+      "lng": -1.7221537,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.919,
+      "meters": 17,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "4609": {
+      "name": "Bledington Primary",
+      "lat": 51.901178,
+      "lng": -1.6287369,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.922,
+      "meters": 71,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "4610": {
+      "name": "Arncott Primary",
+      "lat": 51.858146,
+      "lng": -1.1195824,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.992,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "4611": {
+      "name": "Kiddington Primary",
+      "lat": 51.915557,
+      "lng": -1.3709747,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.939,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "4612": {
+      "name": "Witney Town Primary",
+      "lat": 51.784144,
+      "lng": -1.481789,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.943,
+      "meters": 45,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "4613": {
+      "name": "Chipping Norton Primary",
+      "lat": 51.938753,
+      "lng": -1.5449165,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.924,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "4614": {
+      "name": "Eynsham Primary",
+      "lat": 51.789462,
+      "lng": -1.3890547,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.957,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "4615": {
+      "name": "Upper Heyford Primary",
+      "lat": 51.927122,
+      "lng": -1.2488285,
+      "gspArea": "EAST CLAYDON",
+      "propensityIndex": 0.949,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Red"
+    },
+    "4617": {
+      "name": "Lovelace Road Primary",
+      "lat": 51.789778,
+      "lng": -1.270757,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.981,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "4618": {
+      "name": "Rose Hill Primary",
+      "lat": 51.723407,
+      "lng": -1.2248894,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.015,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4619": {
+      "name": "Cottisford Primary",
+      "lat": 51.975494,
+      "lng": -1.1421653,
+      "gspArea": "EAST CLAYDON",
+      "propensityIndex": 0.95,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Red"
+    },
+    "4620": {
+      "name": "Leafield Primary",
+      "lat": 51.835224,
+      "lng": -1.5619245,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.929,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "4621": {
+      "name": "Burford Primary",
+      "lat": 51.810811,
+      "lng": -1.6290442,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.927,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "4622": {
+      "name": "Old Road Primary",
+      "lat": 51.753807,
+      "lng": -1.200654,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.012,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "4623": {
+      "name": "Windrush Park Primary",
+      "lat": 51.785493,
+      "lng": -1.5176973,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.939,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "4626": {
+      "name": "Oxford Primary",
+      "lat": 51.749568,
+      "lng": -1.2749825,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.992,
+      "meters": null,
+      "feederCount": 13,
+      "demandRAG": "Red"
+    },
+    "4640": {
+      "name": "Bicester North Primary",
+      "lat": 51.909208,
+      "lng": -1.133865,
+      "gspArea": "EAST CLAYDON",
+      "propensityIndex": 0.971,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4900": {
+      "name": "Fyfield Primary",
+      "lat": 51.693127,
+      "lng": -1.3900627,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.974,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "4903": {
+      "name": "Grove Primary",
+      "lat": 51.603958,
+      "lng": -1.4308355,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.977,
+      "meters": 255,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4904": {
+      "name": "Milton Primary",
+      "lat": 51.625145,
+      "lng": -1.2792202,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.024,
+      "meters": 133,
+      "feederCount": 11,
+      "demandRAG": "Red"
+    },
+    "4905": {
+      "name": "Wheatley Primary",
+      "lat": 51.743825,
+      "lng": -1.121125,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.042,
+      "meters": 123,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "4906": {
+      "name": "Faringdon Primary",
+      "lat": 51.652374,
+      "lng": -1.5848353,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.94,
+      "meters": 124,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "4907": {
+      "name": "St Ebbes Primary",
+      "lat": 51.748029,
+      "lng": -1.2589141,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.996,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4908": {
+      "name": "Black Bourton Primary",
+      "lat": 51.732363,
+      "lng": -1.5909089,
+      "gspArea": "MINETY",
+      "propensityIndex": 0.935,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "4910": {
+      "name": "University Parks Primary",
+      "lat": 51.759796,
+      "lng": -1.2556354,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.993,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "4911": {
+      "name": "Kennington Primary",
+      "lat": 51.706101,
+      "lng": -1.2361258,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.017,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "4912": {
+      "name": "Standlake Primary",
+      "lat": 51.718523,
+      "lng": -1.4379686,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.96,
+      "meters": 12,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "4913": {
+      "name": "Fulscot Primary",
+      "lat": 51.601819,
+      "lng": -1.2157563,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.058,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4914": {
+      "name": "Frenchay Road Primary",
+      "lat": 51.770715,
+      "lng": -1.2706149,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.987,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4916": {
+      "name": "Wootton Road Primary",
+      "lat": 51.681033,
+      "lng": -1.2891524,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.007,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4917": {
+      "name": "Carterton Primary",
+      "lat": 51.768376,
+      "lng": -1.5918589,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.932,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "4918": {
+      "name": "Wantage Primary",
+      "lat": 51.59208,
+      "lng": -1.405361,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.986,
+      "meters": null,
+      "feederCount": 12,
+      "demandRAG": "Red"
+    },
+    "4919": {
+      "name": "North Hinksey Primary",
+      "lat": 51.736233,
+      "lng": -1.2969614,
+      "gspArea": "COWLEY",
+      "propensityIndex": 0.99,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "4920": {
+      "name": "Winsmore Lane Primary",
+      "lat": 51.669439,
+      "lng": -1.2854441,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.011,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "4925": {
+      "name": "Harwell Primary",
+      "lat": 51.579598,
+      "lng": -1.3174195,
+      "gspArea": "COWLEY",
+      "propensityIndex": 1.019,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "5200": {
+      "name": "Titchfield Primary",
+      "lat": 50.848253,
+      "lng": -1.2328447,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "5201": {
+      "name": "Wymering Primary",
+      "lat": 50.844259,
+      "lng": -1.0785172,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 390,
+      "feederCount": 27,
+      "demandRAG": "0.00"
+    },
+    "5202": {
+      "name": "Lee-On-Solent Primary",
+      "lat": 50.799417,
+      "lng": -1.1945652,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 450,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "5204": {
+      "name": "West End Primary",
+      "lat": 50.852019,
+      "lng": -1.1885742,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 173,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "5205": {
+      "name": "Plessey Titchfield Primary",
+      "lat": 50.859352,
+      "lng": -1.2428073,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 214,
+      "feederCount": 6,
+      "demandRAG": "0.00"
+    },
+    "5206": {
+      "name": "Park Gate Primary",
+      "lat": 50.871557,
+      "lng": -1.2713317,
+      "gspArea": "BOTLEY WOOD",
+      "propensityIndex": 0.896,
+      "meters": 69,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "5209": {
+      "name": "Eastney Primary",
+      "lat": 50.787143,
+      "lng": -1.0600205,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 27,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "5210": {
+      "name": "Brandon Road Primary",
+      "lat": 50.783957,
+      "lng": -1.0834193,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "5211": {
+      "name": "Fratton Park Primary",
+      "lat": 50.797418,
+      "lng": -1.0629078,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "5212": {
+      "name": "Rowner Park Primary",
+      "lat": 50.803699,
+      "lng": -1.1780298,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 9,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "5213": {
+      "name": "Brockhurst Primary",
+      "lat": 50.815062,
+      "lng": -1.158483,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "5214": {
+      "name": "Greetham Street Primary",
+      "lat": 50.79759,
+      "lng": -1.0869413,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Red"
+    },
+    "5215": {
+      "name": "Gamble Road Primary",
+      "lat": 50.811859,
+      "lng": -1.0820361,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 9,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "5216": {
+      "name": "Zetland Road Primary",
+      "lat": 50.796791,
+      "lng": -1.141628,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "5217": {
+      "name": "North Fareham Primary",
+      "lat": 50.863632,
+      "lng": -1.1995839,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "0.00"
+    },
+    "5218": {
+      "name": "Hoeford Primary",
+      "lat": 50.836544,
+      "lng": -1.1797679,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 11,
+      "demandRAG": "Red"
+    },
+    "5219": {
+      "name": "College Park Primary",
+      "lat": 50.819978,
+      "lng": -1.0659487,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "5220": {
+      "name": "Hilsea Primary",
+      "lat": 50.829991,
+      "lng": -1.0586351,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "5221": {
+      "name": "Farlington Primary",
+      "lat": 50.839199,
+      "lng": -1.0441625,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "5222": {
+      "name": "Portchester Primary",
+      "lat": 50.846379,
+      "lng": -1.1201082,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "5225": {
+      "name": "Portsmouth Primary",
+      "lat": 50.793272,
+      "lng": -1.1017811,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "5500": {
+      "name": "Rose Green Primary",
+      "lat": 50.786615,
+      "lng": -0.72499246,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "5501": {
+      "name": "Market Primary",
+      "lat": 50.835668,
+      "lng": -0.7732902,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 4903,
+      "feederCount": 11,
+      "demandRAG": "Red"
+    },
+    "5502": {
+      "name": "Ashling Road Primary",
+      "lat": 50.854047,
+      "lng": -0.80681949,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 2960,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "5504": {
+      "name": "Emsworth Primary",
+      "lat": 50.846951,
+      "lng": -0.93802413,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 1911,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "5505": {
+      "name": "Gable Head Primary",
+      "lat": 50.794214,
+      "lng": -0.97691849,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 1276,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "5506": {
+      "name": "Selsey Primary",
+      "lat": 50.741901,
+      "lng": -0.78724992,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 870,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "5507": {
+      "name": "Brockhampton Primary",
+      "lat": 50.847642,
+      "lng": -0.99472808,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 21,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "5509": {
+      "name": "Bilsham Primary",
+      "lat": 50.805731,
+      "lng": -0.61956242,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 229,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "5510": {
+      "name": "Argyle Road Primary",
+      "lat": 50.784462,
+      "lng": -0.67938668,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 19,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "5511": {
+      "name": "Birdham Primary",
+      "lat": 50.788584,
+      "lng": -0.83856291,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 32,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "5512": {
+      "name": "South Bersted Primary",
+      "lat": 50.79829,
+      "lng": -0.66719087,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 242,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "5513": {
+      "name": "Purbrook Primary",
+      "lat": 50.865998,
+      "lng": -1.048631,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "5514": {
+      "name": "Waterlooville Primary",
+      "lat": 50.879042,
+      "lng": -1.0349898,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 11,
+      "demandRAG": "Red"
+    },
+    "5515": {
+      "name": "Horndean Primary",
+      "lat": 50.910418,
+      "lng": -1.0018684,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 135,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "5516": {
+      "name": "Leigh Park Primary",
+      "lat": 50.865889,
+      "lng": -0.97620345,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "5517": {
+      "name": "Meyrick Road Primary",
+      "lat": 50.853407,
+      "lng": -0.99487409,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "5518": {
+      "name": "Chichester Primary",
+      "lat": 50.858952,
+      "lng": -0.69142141,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": 16,
+      "feederCount": 18,
+      "demandRAG": "Red"
+    },
+    "5519": {
+      "name": "Hunston Primary",
+      "lat": 50.816718,
+      "lng": -0.76711474,
+      "gspArea": "LOVEDEAN",
+      "propensityIndex": 0.878,
+      "meters": null,
+      "feederCount": 18,
+      "demandRAG": "Red"
+    },
+    "5802": {
+      "name": "Sandown Primary",
+      "lat": 50.662071,
+      "lng": -1.1542019,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": 206,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "5804": {
+      "name": "Shanklin Primary",
+      "lat": 50.634046,
+      "lng": -1.1839465,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": 77,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "5805": {
+      "name": "Ventnor Primary",
+      "lat": 50.597745,
+      "lng": -1.2080428,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": 36,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "5806": {
+      "name": "Newport Primary",
+      "lat": 50.703387,
+      "lng": -1.2922503,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": 54,
+      "feederCount": 12,
+      "demandRAG": "0.00"
+    },
+    "5808": {
+      "name": "Shalfleet Primary",
+      "lat": 50.696006,
+      "lng": -1.4233004,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "5809": {
+      "name": "Ryde Primary",
+      "lat": 50.724336,
+      "lng": -1.1576577,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": 30,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "5810": {
+      "name": "Binstead Primary",
+      "lat": 50.719488,
+      "lng": -1.2022961,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "5812": {
+      "name": "Freshwater Primary",
+      "lat": 50.681336,
+      "lng": -1.5155246,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": 26,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "6100": {
+      "name": "Butts Ash Primary",
+      "lat": 50.849954,
+      "lng": -1.4058504,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "6101": {
+      "name": "Lymington Primary",
+      "lat": 50.770427,
+      "lng": -1.5515469,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.76,
+      "meters": 135,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "6102": {
+      "name": "Hincheslea Primary",
+      "lat": 50.802919,
+      "lng": -1.6067932,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.782,
+      "meters": 176,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "6104": {
+      "name": "Silkstead Primary",
+      "lat": 51.018739,
+      "lng": -1.3658454,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.905,
+      "meters": 52,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "6105": {
+      "name": "Fletchwood Primary",
+      "lat": 50.907764,
+      "lng": -1.5206463,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.832,
+      "meters": 45,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "6106": {
+      "name": "North Baddesley Primary",
+      "lat": 50.983265,
+      "lng": -1.4588978,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.874,
+      "meters": 8,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "6107": {
+      "name": "Romsey Primary",
+      "lat": 50.988266,
+      "lng": -1.4871633,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.873,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "6108": {
+      "name": "Dunbridge Primary",
+      "lat": 51.034698,
+      "lng": -1.5518549,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.879,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "6109": {
+      "name": "Totton Primary",
+      "lat": 50.919206,
+      "lng": -1.4915785,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.841,
+      "meters": 19,
+      "feederCount": 8,
+      "demandRAG": "Red"
+    },
+    "6110": {
+      "name": "Bishops Waltham Primary",
+      "lat": 50.946805,
+      "lng": -1.1943989,
+      "gspArea": "BOTLEY WOOD",
+      "propensityIndex": 0.896,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "6111": {
+      "name": "Gordon Road Primary",
+      "lat": 51.067234,
+      "lng": -1.3132488,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.936,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "6112": {
+      "name": "Harestock Primary",
+      "lat": 51.079193,
+      "lng": -1.3460335,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.932,
+      "meters": 17,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "6113": {
+      "name": "Langley Primary",
+      "lat": 50.810561,
+      "lng": -1.360435,
+      "gspArea": "FAWLEY",
+      "propensityIndex": 0.823,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "6114": {
+      "name": "St Cross Primary",
+      "lat": 51.050812,
+      "lng": -1.3267595,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.927,
+      "meters": null,
+      "feederCount": 14,
+      "demandRAG": "Red"
+    },
+    "6400": {
+      "name": "Chapel Primary",
+      "lat": 50.905736,
+      "lng": -1.3919713,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.84,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "6401": {
+      "name": "Weston Primary",
+      "lat": 50.886934,
+      "lng": -1.3586937,
+      "gspArea": "BOTLEY WOOD",
+      "propensityIndex": 0.896,
+      "meters": 254,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "6402": {
+      "name": "Eastleigh North Primary",
+      "lat": 50.968257,
+      "lng": -1.3544561,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.884,
+      "meters": 55,
+      "feederCount": 11,
+      "demandRAG": "Red"
+    },
+    "6403": {
+      "name": "Hamble Primary",
+      "lat": 50.876708,
+      "lng": -1.3280906,
+      "gspArea": "BOTLEY WOOD",
+      "propensityIndex": 0.896,
+      "meters": 80,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "6404": {
+      "name": "Velmore Primary",
+      "lat": 50.970668,
+      "lng": -1.3898995,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.879,
+      "meters": 7,
+      "feederCount": 16,
+      "demandRAG": "Red"
+    },
+    "6405": {
+      "name": "Central Bridge Primary",
+      "lat": 50.899208,
+      "lng": -1.3957251,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.835,
+      "meters": 142,
+      "feederCount": 11,
+      "demandRAG": "Red"
+    },
+    "6406": {
+      "name": "Townhill Park Primary",
+      "lat": 50.930737,
+      "lng": -1.3588175,
+      "gspArea": "BOTLEY WOOD",
+      "propensityIndex": 0.896,
+      "meters": 12,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "6408": {
+      "name": "Chandlers Ford Primary",
+      "lat": 50.99173,
+      "lng": -1.3816586,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.89,
+      "meters": 46,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "6409": {
+      "name": "Bishopstoke Primary",
+      "lat": 50.963804,
+      "lng": -1.3397511,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.884,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "0.00"
+    },
+    "6410": {
+      "name": "Bassett Primary",
+      "lat": 50.941526,
+      "lng": -1.4008417,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.862,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "6411": {
+      "name": "Maybush Primary",
+      "lat": 50.932545,
+      "lng": -1.4545625,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.851,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "6412": {
+      "name": "Bevois Valley Primary",
+      "lat": 50.916577,
+      "lng": -1.3946894,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.847,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "0.00"
+    },
+    "6414": {
+      "name": "Shirley Primary",
+      "lat": 50.92235,
+      "lng": -1.4324589,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.847,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "6415": {
+      "name": "Lordshill Primary",
+      "lat": 50.94264,
+      "lng": -1.4498898,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.856,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "6416": {
+      "name": "Woodmill Lane Primary",
+      "lat": 50.937024,
+      "lng": -1.3789827,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.862,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "6417": {
+      "name": "Woolston Primary",
+      "lat": 50.898975,
+      "lng": -1.3736301,
+      "gspArea": "BOTLEY WOOD",
+      "propensityIndex": 0.896,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "6420": {
+      "name": "Western Esplanade Primary",
+      "lat": 50.906059,
+      "lng": -1.4094747,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.839,
+      "meters": null,
+      "feederCount": 11,
+      "demandRAG": "Green"
+    },
+    "6422": {
+      "name": "Bitterne Primary",
+      "lat": 50.915445,
+      "lng": -1.3595965,
+      "gspArea": "BOTLEY WOOD",
+      "propensityIndex": 0.896,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "6423": {
+      "name": "Regents Park Primary",
+      "lat": 50.915584,
+      "lng": -1.4427974,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.842,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "6424": {
+      "name": "Hedge End Primary",
+      "lat": 50.938532,
+      "lng": -1.3035037,
+      "gspArea": "NURSLING",
+      "propensityIndex": 0.875,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "6700": {
+      "name": "Homington Primary",
+      "lat": 51.033577,
+      "lng": -1.8339219,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.849,
+      "meters": null,
+      "feederCount": 2,
+      "demandRAG": "Green"
+    },
+    "6701": {
+      "name": "Teffont Primary",
+      "lat": 51.078269,
+      "lng": -2.0037037,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.855,
+      "meters": 245,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "6702": {
+      "name": "Petersfinger Primary",
+      "lat": 51.063133,
+      "lng": -1.7786479,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.861,
+      "meters": 237,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "6703": {
+      "name": "Verwood Primary",
+      "lat": 50.891468,
+      "lng": -1.8916672,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.807,
+      "meters": 230,
+      "feederCount": 6,
+      "demandRAG": "3.54"
+    },
+    "6704": {
+      "name": "Rockbourne Primary",
+      "lat": 50.959601,
+      "lng": -1.8359651,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.829,
+      "meters": 118,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "6707": {
+      "name": "Stapleford Primary",
+      "lat": 51.132937,
+      "lng": -1.903181,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.871,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "6708": {
+      "name": "Park House Primary",
+      "lat": 51.192777,
+      "lng": -1.6702724,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 0.9,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "6709": {
+      "name": "Shaftesbury Primary",
+      "lat": 51.009125,
+      "lng": -2.2065547,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.845,
+      "meters": 28,
+      "feederCount": 14,
+      "demandRAG": "Red"
+    },
+    "6710": {
+      "name": "Netherhampton Primary",
+      "lat": 51.061123,
+      "lng": -1.8233211,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.857,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "6711": {
+      "name": "Bemerton Primary",
+      "lat": 51.080303,
+      "lng": -1.8360247,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.861,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Green"
+    },
+    "6712": {
+      "name": "Wimborne St Giles Primary",
+      "lat": 50.91356,
+      "lng": -1.9582998,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.81,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "6713": {
+      "name": "Redlynch Primary",
+      "lat": 50.984276,
+      "lng": -1.7296603,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.844,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "6714": {
+      "name": "Fordingbridge Primary",
+      "lat": 50.938981,
+      "lng": -1.8011404,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.825,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "6715": {
+      "name": "Boscombe Down Primary",
+      "lat": 51.168384,
+      "lng": -1.7555755,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 0.886,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "6716": {
+      "name": "Salisbury Central Primary",
+      "lat": 51.073483,
+      "lng": -1.7984814,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.862,
+      "meters": null,
+      "feederCount": 12,
+      "demandRAG": "Green"
+    },
+    "6717": {
+      "name": "Minchington Primary",
+      "lat": 50.930117,
+      "lng": -2.0559557,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.815,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "6718": {
+      "name": "Tisbury Primary",
+      "lat": 51.061442,
+      "lng": -2.0950136,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.853,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Amber"
+    },
+    "6719": {
+      "name": "Bourton Primary",
+      "lat": 51.071236,
+      "lng": -2.3244667,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.869,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "6720": {
+      "name": "Ratfyn Primary",
+      "lat": 51.365765,
+      "lng": -1.392107,
+      "gspArea": "BRAMLEY (AMES-THAT)",
+      "propensityIndex": 0.992,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "6721": {
+      "name": "Gussage St Michael Primary",
+      "lat": 50.902226,
+      "lng": -2.0207396,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.806,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "7001": {
+      "name": "Hinton Martell Primary",
+      "lat": 50.853785,
+      "lng": -1.9913963,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.793,
+      "meters": 28347,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "7003": {
+      "name": "Somerford Primary",
+      "lat": 50.741635,
+      "lng": -1.7425521,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.778,
+      "meters": 18752,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "7004": {
+      "name": "Southbourne Primary",
+      "lat": 50.72813,
+      "lng": -1.8092022,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.778,
+      "meters": 13980,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "7005": {
+      "name": "Winton Primary",
+      "lat": 50.743931,
+      "lng": -1.8688628,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.778,
+      "meters": 6362,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "7007": {
+      "name": "Bourne Valley Primary",
+      "lat": 50.73132,
+      "lng": -1.9134172,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.775,
+      "meters": 414,
+      "feederCount": 24,
+      "demandRAG": "Red"
+    },
+    "7008": {
+      "name": "East Howe Primary",
+      "lat": 50.755602,
+      "lng": -1.9051219,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.778,
+      "meters": 354,
+      "feederCount": 6,
+      "demandRAG": "Red"
+    },
+    "7009": {
+      "name": "Electric House Primary",
+      "lat": 50.721971,
+      "lng": -1.8773104,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.777,
+      "meters": 284,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "7010": {
+      "name": "Westbourne Primary",
+      "lat": 50.72294,
+      "lng": -1.8931036,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.776,
+      "meters": 44,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "7011": {
+      "name": "Boscombe East Primary",
+      "lat": 50.731525,
+      "lng": -1.8364924,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.778,
+      "meters": 55,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "7012": {
+      "name": "Central Primary",
+      "lat": 50.72691,
+      "lng": -1.8555358,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.778,
+      "meters": 78,
+      "feederCount": 9,
+      "demandRAG": "Red"
+    },
+    "7013": {
+      "name": "New Milton Primary",
+      "lat": 50.753623,
+      "lng": -1.6746266,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.775,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "7014": {
+      "name": "Milford-On-Sea Primary",
+      "lat": 50.739051,
+      "lng": -1.6009933,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.759,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "7015": {
+      "name": "Redhill Primary",
+      "lat": 50.764869,
+      "lng": -1.8806724,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.78,
+      "meters": 100,
+      "feederCount": 16,
+      "demandRAG": "Green"
+    },
+    "7016": {
+      "name": "Christchurch Primary",
+      "lat": 50.737671,
+      "lng": -1.7789084,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.779,
+      "meters": null,
+      "feederCount": 16,
+      "demandRAG": "Green"
+    },
+    "7018": {
+      "name": "Mannington Primary",
+      "lat": 50.846777,
+      "lng": -1.8935317,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.795,
+      "meters": null,
+      "feederCount": 21,
+      "demandRAG": "Green"
+    },
+    "7300": {
+      "name": "Parkstone South Primary",
+      "lat": 50.708249,
+      "lng": -1.9339239,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.773,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Red"
+    },
+    "7301": {
+      "name": "Parkstone North Primary",
+      "lat": 50.729707,
+      "lng": -1.9557135,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.773,
+      "meters": 677,
+      "feederCount": 10,
+      "demandRAG": "Red"
+    },
+    "7302": {
+      "name": "Poole Primary",
+      "lat": 50.714984,
+      "lng": -1.9859111,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.77,
+      "meters": 277,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "7303": {
+      "name": "Hamworthy Primary",
+      "lat": 50.716829,
+      "lng": -1.9998911,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.77,
+      "meters": 309,
+      "feederCount": 10,
+      "demandRAG": "Green"
+    },
+    "7304": {
+      "name": "Alderney Primary",
+      "lat": 50.755851,
+      "lng": -1.940832,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.776,
+      "meters": 93,
+      "feederCount": 9,
+      "demandRAG": "0.00"
+    },
+    "7305": {
+      "name": "Bovington Primary",
+      "lat": 50.689904,
+      "lng": -2.2288178,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.776,
+      "meters": 117,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "7306": {
+      "name": "Bushey Primary",
+      "lat": 50.651464,
+      "lng": -2.0343059,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.77,
+      "meters": 56,
+      "feederCount": 2,
+      "demandRAG": "Red"
+    },
+    "7307": {
+      "name": "Weymouth Primary",
+      "lat": 50.610662,
+      "lng": -2.4614839,
+      "gspArea": "CHICKERELL",
+      "propensityIndex": 0.787,
+      "meters": null,
+      "feederCount": 12,
+      "demandRAG": "Green"
+    },
+    "7308": {
+      "name": "Portland Primary",
+      "lat": 50.564353,
+      "lng": -2.4488323,
+      "gspArea": "CHICKERELL",
+      "propensityIndex": 0.787,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "7309": {
+      "name": "Wareham Town Primary",
+      "lat": 50.686764,
+      "lng": -2.114099,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.768,
+      "meters": 6,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "7310": {
+      "name": "Winterborne Kingston Primary",
+      "lat": 50.78261,
+      "lng": -2.2193696,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.786,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "7311": {
+      "name": "Redlands Primary",
+      "lat": 50.639646,
+      "lng": -2.46618,
+      "gspArea": "CHICKERELL",
+      "propensityIndex": 0.787,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "7312": {
+      "name": "Swanage Primary",
+      "lat": 50.613373,
+      "lng": -1.9729521,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.779,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Red"
+    },
+    "7313": {
+      "name": "Creekmoor Primary",
+      "lat": 50.746693,
+      "lng": -1.9935414,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.773,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "7314": {
+      "name": "Chickerell Primary",
+      "lat": 50.623273,
+      "lng": -2.4893718,
+      "gspArea": "CHICKERELL",
+      "propensityIndex": 0.787,
+      "meters": null,
+      "feederCount": 17,
+      "demandRAG": "Green"
+    },
+    "7317": {
+      "name": "Cerne Abbas Primary",
+      "lat": 50.807908,
+      "lng": -2.4819181,
+      "gspArea": "CHICKERELL",
+      "propensityIndex": 0.787,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "7318": {
+      "name": "Piddletrenthide Primary",
+      "lat": 50.797069,
+      "lng": -2.4246389,
+      "gspArea": "CHICKERELL",
+      "propensityIndex": 0.787,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "7319": {
+      "name": "Charminster Primary",
+      "lat": 50.737358,
+      "lng": -2.4646274,
+      "gspArea": "CHICKERELL",
+      "propensityIndex": 0.787,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "7320": {
+      "name": "Blandford Primary",
+      "lat": 50.849233,
+      "lng": -2.1603205,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.796,
+      "meters": null,
+      "feederCount": 10,
+      "demandRAG": "Green"
+    },
+    "7321": {
+      "name": "Puddletown Primary",
+      "lat": 50.754371,
+      "lng": -2.3667397,
+      "gspArea": "CHICKERELL",
+      "propensityIndex": 0.787,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "7322": {
+      "name": "Wimborne Primary",
+      "lat": 50.799459,
+      "lng": -1.9727891,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.781,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "7323": {
+      "name": "Tarrant Rushton Primary",
+      "lat": 50.865242,
+      "lng": -2.0793804,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.797,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "7324": {
+      "name": "Corfe Mullen Primary",
+      "lat": 50.764227,
+      "lng": -2.0214576,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.774,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "7325": {
+      "name": "Ferndown Primary",
+      "lat": 50.805684,
+      "lng": -1.9078023,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.786,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "7326": {
+      "name": "Shroton Primary",
+      "lat": 50.9222,
+      "lng": -2.2097116,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.821,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "7327": {
+      "name": "Winfrith Heath Primary",
+      "lat": 50.678179,
+      "lng": -2.2738384,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.782,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Red"
+    },
+    "7335": {
+      "name": "Holes Bay Primary",
+      "lat": 50.727215,
+      "lng": -1.9910929,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.771,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "7600": {
+      "name": "Larkhill Primary",
+      "lat": 50.949788,
+      "lng": -2.6608023,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "7601": {
+      "name": "Yeovil Primary",
+      "lat": 50.949369,
+      "lng": -2.6036695,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": 296,
+      "feederCount": 18,
+      "demandRAG": "Green"
+    },
+    "7602": {
+      "name": "Maiden Newton Primary",
+      "lat": 50.777853,
+      "lng": -2.5809203,
+      "gspArea": "CHICKERELL",
+      "propensityIndex": 0.787,
+      "meters": 221,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "7604": {
+      "name": "Yetminster Primary",
+      "lat": 50.889965,
+      "lng": -2.5658791,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": 29,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "7606": {
+      "name": "Pulham Primary",
+      "lat": 50.883844,
+      "lng": -2.405384,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "7607": {
+      "name": "Milborne Port Primary",
+      "lat": 50.97618,
+      "lng": -2.4581769,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": null,
+      "feederCount": 3,
+      "demandRAG": "Green"
+    },
+    "7608": {
+      "name": "Sparkford Primary",
+      "lat": 51.027483,
+      "lng": -2.560808,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": null,
+      "feederCount": 4,
+      "demandRAG": "Green"
+    },
+    "7609": {
+      "name": "Bruton Primary",
+      "lat": 51.114782,
+      "lng": -2.4429037,
+      "gspArea": "MELKSHAM",
+      "propensityIndex": 0.885,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "7610": {
+      "name": "Sherborne Primary",
+      "lat": 50.961757,
+      "lng": -2.5142939,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": null,
+      "feederCount": 7,
+      "demandRAG": "Green"
+    },
+    "7611": {
+      "name": "Wincanton Primary",
+      "lat": 51.048843,
+      "lng": -2.4110034,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.872,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "7612": {
+      "name": "Castle Cary Primary",
+      "lat": 51.07757,
+      "lng": -2.5076407,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": null,
+      "feederCount": 8,
+      "demandRAG": "Green"
+    },
+    "7613": {
+      "name": "Henstridge Primary",
+      "lat": 50.972128,
+      "lng": -2.3905287,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": null,
+      "feederCount": 6,
+      "demandRAG": "Green"
+    },
+    "7614": {
+      "name": "West Hendford Primary",
+      "lat": 50.936657,
+      "lng": -2.6417877,
+      "gspArea": "AXMINSTER",
+      "propensityIndex": 0.759,
+      "meters": null,
+      "feederCount": 9,
+      "demandRAG": "Green"
+    },
+    "7615": {
+      "name": "West Stour Primary",
+      "lat": 50.997316,
+      "lng": -2.3191625,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.853,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "7616": {
+      "name": "Gillingham Primary",
+      "lat": 51.030903,
+      "lng": -2.2839422,
+      "gspArea": "MANNINGTON",
+      "propensityIndex": 0.857,
+      "meters": null,
+      "feederCount": 5,
+      "demandRAG": "Green"
+    },
+    "2509-11": {
+      "name": "Canal Bank 11kV Primary",
+      "lat": 51.533725,
+      "lng": -0.25794804,
+      "gspArea": "WILLESDEN",
+      "propensityIndex": 1.224,
+      "meters": null,
+      "feederCount": null,
+      "demandRAG": "0.00"
+    },
+    "2509-6.6": {
+      "name": "Canal Bank 6.6kV Primary",
+      "lat": 51.533725,
+      "lng": -0.25794804,
+      "gspArea": "WILLESDEN",
+      "propensityIndex": 1.224,
+      "meters": null,
+      "feederCount": null,
+      "demandRAG": "0.00"
+    }
+  }
+}

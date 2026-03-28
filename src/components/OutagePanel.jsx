@@ -133,16 +133,49 @@ export function FaultMapMarkers({ outages, visible }) {
   });
 }
 
+// ── Complaints risk helpers ────────────────────────────────────────────────
+function findNearestPrimary(lat, lng, complaintsData) {
+  if (!complaintsData?.primaries) return null;
+  let best = null, bestDist = Infinity;
+  for (const [nrn, p] of Object.entries(complaintsData.primaries)) {
+    if (p.lat == null || p.lng == null) continue;
+    const d = (p.lat - lat) ** 2 + (p.lng - lng) ** 2;
+    if (d < bestDist) { bestDist = d; best = { nrn, ...p }; }
+  }
+  return best;
+}
+
+function complaintsRagColor(propensity) {
+  if (propensity >= 1.20) return '#ef4444';   // red
+  if (propensity >= 1.05) return '#f97316';   // amber
+  if (propensity >= 0.90) return '#eab308';   // yellow
+  return '#22c55e';                            // green
+}
+
 // ── 24hr Restoration Timeline ─────────────────────────────────────────────
-export function FaultTimeline({ outages }) {
+export function FaultTimeline({ outages, complaintsData }) {
   const now = Date.now();
   const windowMs = 24 * 60 * 60 * 1000;
+  const baseRate = complaintsData?.meta?.baseRate ?? 0.0025;
+
   const faultsWithEtr = outages
     .filter(o => o.estimatedRestoration)
-    .map(o => ({
-      ...o,
-      _cml: Math.round((o.affectedCustomerCount || 0) * Math.max(0, (new Date(o.estimatedRestoration).getTime() - now) / 60000)),
-    }))
+    .map(o => {
+      const etrMs = new Date(o.estimatedRestoration).getTime();
+      const minsLeft = Math.max(0, (etrMs - now) / 60000);
+      const durationHrs = minsLeft / 60;
+      const customers = o.affectedCustomerCount || 0;
+      const primary = complaintsData ? findNearestPrimary(o.latitude, o.longitude, complaintsData) : null;
+      const propensityIndex = primary?.propensityIndex ?? 1.0;
+      const expectedComplaints = customers > 0 ? Math.round(customers * durationHrs * baseRate * propensityIndex) : null;
+      return {
+        ...o,
+        _cml: Math.round(customers * minsLeft),
+        _primary: primary,
+        _propensityIndex: propensityIndex,
+        _expectedComplaints: expectedComplaints,
+      };
+    })
     .sort((a, b) => b._cml - a._cml);
 
   if (faultsWithEtr.length === 0) return (
@@ -151,10 +184,13 @@ export function FaultTimeline({ outages }) {
     </div>
   );
 
-  const totalCml = faultsWithEtr.reduce((sum, o) => {
-    const minsLeft = Math.max(0, (new Date(o.estimatedRestoration).getTime() - now) / 60000);
-    return sum + (o.affectedCustomerCount || 0) * minsLeft;
-  }, 0);
+  const totalCml = faultsWithEtr.reduce((sum, o) => sum + o._cml, 0);
+  const totalComplaints = complaintsData
+    ? faultsWithEtr.reduce((sum, o) => sum + (o._expectedComplaints ?? 0), 0)
+    : null;
+  const highestRiskFault = complaintsData
+    ? faultsWithEtr.reduce((best, o) => (!best || (o._expectedComplaints ?? 0) > (best._expectedComplaints ?? 0) ? o : best), null)
+    : null;
 
   return (
     <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
@@ -178,6 +214,8 @@ export function FaultTimeline({ outages }) {
         const cml = o._cml;
         const barPct = Math.min(100, ((etrMs - now) / windowMs) * 100);
         const overflow = etrMs - now > windowMs;
+
+        const ragColor = complaintsData ? complaintsRagColor(o._propensityIndex) : null;
 
         return (
           <div key={o.UUID} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
@@ -203,6 +241,21 @@ export function FaultTimeline({ outages }) {
                 ETR {new Date(o.estimatedRestoration).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
               </div>
             </div>
+            {/* Complaints risk badge */}
+            {complaintsData && (
+              <div style={{ width: 62, flexShrink: 0, textAlign: 'right' }}>
+                <div style={{
+                  display: 'inline-block', fontSize: 9, fontWeight: 700,
+                  color: ragColor, border: `1px solid ${ragColor}`,
+                  borderRadius: 3, padding: '1px 4px', whiteSpace: 'nowrap',
+                }}>
+                  {o._expectedComplaints != null ? `~${o._expectedComplaints}` : '—'}
+                </div>
+                <div style={{ fontSize: 7, color: '#3a5268', marginTop: 1 }}>
+                  {o._propensityIndex.toFixed(2)}× propensity
+                </div>
+              </div>
+            )}
           </div>
         );
       })}
@@ -223,6 +276,37 @@ export function FaultTimeline({ outages }) {
       <div style={{ fontSize: 9, color: '#2e4460', marginTop: 4 }}>
         CML = Customer Minutes Lost · customers × minutes to ETR
       </div>
+
+      {/* Complaints risk summary */}
+      {complaintsData && totalComplaints != null && (
+        <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#8899aa', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Complaints Risk
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <span style={{ fontSize: 10, color: '#8899aa' }}>Est. total complaints</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#c084fc' }}>~{totalComplaints.toLocaleString()}</span>
+          </div>
+          {highestRiskFault && highestRiskFault._expectedComplaints > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 9, color: '#6a8099' }}>Highest risk fault</span>
+              <span style={{ fontSize: 9, color: complaintsRagColor(highestRiskFault._propensityIndex), fontWeight: 600 }}>
+                {highestRiskFault.reference} (~{highestRiskFault._expectedComplaints})
+              </span>
+            </div>
+          )}
+          {highestRiskFault?._primary && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 9, color: '#6a8099' }}>Nearest primary</span>
+              <span style={{ fontSize: 9, color: '#8899aa' }}>{highestRiskFault._primary.name}</span>
+            </div>
+          )}
+          <div style={{ fontSize: 8, color: '#2e4460', marginTop: 5 }}>
+            Complaints = customers × hrs × {(complaintsData.meta.baseRate * 1000).toFixed(1)}/1000 cust/hr × propensity index
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

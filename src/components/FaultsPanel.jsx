@@ -348,6 +348,7 @@ export default function FaultsPanel({
   const [locating, setLocating]       = useState(null);
   const [fcLoading, setFcLoading]     = useState(false);
   const [fcError, setFcError]         = useState(null);
+  const [complaintsData, setComplaintsData] = useState(null);
   const intervalRef = useRef(null);
 
   const fetchOutages = useCallback(async () => {
@@ -380,6 +381,14 @@ export default function FaultsPanel({
     if (activeTab !== 'Forecast' && activeTab !== 'Model') return;
     loadForecast();
   }, [activeTab, loadForecast]);
+
+  useEffect(() => {
+    if (activeTab !== 'CML' || complaintsData) return;
+    fetch('/lsoa-primary-complaints.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setComplaintsData(d); })
+      .catch(() => {}); // silently fail — CML still works without complaints data
+  }, [activeTab, complaintsData]);
 
   const handleLocate = useCallback(o => {
     if (o.latitude == null) return;
@@ -461,7 +470,7 @@ export default function FaultsPanel({
             Source: robintw/sse_powercuts · {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString('en-GB')}` : 'Loading…'}{autoRefresh && ' · Auto-refresh ON'}
           </div>
         </>)}
-        {activeTab === 'CML' && (total > 0 ? <FaultTimeline outages={outages} /> : <p style={{ fontSize:11, color:'#6a8099', paddingTop:8 }}>No active faults with ETR data.</p>)}
+        {activeTab === 'CML' && (total > 0 ? <FaultTimeline outages={outages} complaintsData={complaintsData} /> : <p style={{ fontSize:11, color:'#6a8099', paddingTop:8 }}>No active faults with ETR data.</p>)}
         {activeTab === 'History' && (
           selectedSubstation?.faultsByYear && Object.keys(selectedSubstation.faultsByYear).length > 0
             ? <NafirsHistory sub={selectedSubstation} />
