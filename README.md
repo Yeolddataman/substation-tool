@@ -30,9 +30,12 @@ A spatial intelligence platform for exploring the SSEN SEPD electricity network.
 | **Voltage levels** | 400/132kV GSP · 132kV BSP · 33/11kV Primary ESAs · 11/0.4kV LV |
 | **Substation count** | ~54,036 LV · 442 Primary ESA boundaries · ~50 GSP/BSP (all SEPD) |
 | **Live faults** | SSEN SEPD active outages · exact lat/lng · affected area polygon · customer impact · ETR |
-| **Fault risk forecast** | 3-day RAG forecast per primary substation — Open-Meteo weather × NAFIRS historical fault rate · map overlay |
+| **Fault risk forecast** | 3-day RAG forecast per primary · Open-Meteo weather × NAFIRS fault rate · Z-score sigmoid ML model · LOYO CV ρ = 0.815 · map overlay |
 | **Fault history** | NAFIRS HV records 2015–2025 by year per primary substation (Recharts bar chart) |
-| **CML tracking** | Customer Minutes Lost ranking across active faults — restoration timeline with 24hr bar chart |
+| **CML tracking** | Customer Minutes Lost ranking across active faults — 24hr restoration timeline with complaints risk badges (propensity-weighted expected complaint count per fault) |
+| **Complaints risk** | Per-fault expected complaints = customers × hrs × 0.0025 × propensity index · LSOA demographic propensity from ONS Census 2021 / geographic proxy |
+| **ML model transparency** | Model tab showing LOYO cross-validation metric, training coverage, RAG thresholds, fitted formula |
+| **GSP filter** | Independent toggle to show/hide 400/132kV GSP markers without affecting the headroom layer |
 | **Headroom data** | Demand & generation RAG per substation (SSEN March 2026) |
 | **LCT projections** | DFES 2025: EVs, heat pumps, solar PV, battery storage by ESA — three scenarios |
 | **Satellite imagery** | ArcGIS World Imagery minimap + Google Maps Street View link per substation |
@@ -52,8 +55,8 @@ src/
 ├── components/
 │   ├── MapView.jsx             Map container, layer management, fault map markers
 │   ├── SubstationSidebar.jsx   5-tab details panel (Details / Headroom / LCT / Demand / Quality)
-│   ├── OutagePanel.jsx         Named exports only: FaultMapMarkers + FaultTimeline
-│   ├── FaultsPanel.jsx         Left-side drawer — 4 tabs: Live / CML / History / Forecast
+│   ├── OutagePanel.jsx         Named exports only: FaultMapMarkers + FaultTimeline (with complaints risk)
+│   ├── FaultsPanel.jsx         Left-side drawer — 5 tabs: Live / CML / History / Forecast / Model
 │   ├── ChatBot.jsx             Network Intelligence Assistant (Anthropic API)
 │   ├── SafetyPanel.jsx         UK safety standards reference drawer
 │   ├── DataQualityPage.jsx     Data quality full-page overlay
@@ -66,8 +69,10 @@ public/                         Static assets — served directly by Vite, fetch
 ├── headroom-substations.json   Processed SSEN headroom (~1,100 SEPD substations with NAFIRS fault counts)
 ├── sepd-primary-boundaries.geojson   442 Primary ESA polygons (simplified)
 ├── ssen-lv-substations.json    ~54k LV substation points (compacted, processed)
+├── demand-profiles.json        Smart meter counts (household proxy) per primary NRN
 ├── dfes-by-primary.json        DFES 2025 LCT projections keyed by normalised primary name
-└── dfes-licence.json           DFES 2025 SEPD licence-level totals
+├── dfes-licence.json           DFES 2025 SEPD licence-level totals
+└── lsoa-primary-complaints.json  Per-primary complaint propensity index (422 primaries)
 
 server/
 └── index.mjs                   Express backend — JWT auth, Anthropic API proxy, fault forecast API
@@ -77,7 +82,10 @@ scripts/                        Node.js one-off data processors (run to rebuild 
 ├── process-dfes.cjs            Reads DFES xlsx → dfes-by-primary.json + dfes-licence.json
 ├── simplify-geojson.mjs        Douglas-Peucker simplification of ESA polygon GeoJSON
 ├── setup-credentials.mjs       Interactive credential setup — generates bcrypt hash + JWT secret
-└── read-dfes-v2.cjs            DFES v2 xlsx inspector/reader
+├── read-dfes-v2.cjs            DFES v2 xlsx inspector/reader
+├── validate-model.mjs          ML model validation — year-on-year autocorrelation, LOYO CV, permutation test
+├── generate-complaints-seed.mjs  Builds lsoa-primary-complaints.json from geographic proxy (no Census download needed)
+└── process-lsoa-complaints.mjs   Full Census 2021 LSOA pipeline — ONS Nomis API + point-in-polygon spatial join
 
 manual_data/                    Raw source files (not committed — place here before processing)
 ├── 20260323_substation_locations_csv.csv
@@ -104,6 +112,8 @@ All datasets are open licence. No API key required for map or weather data.
 | DFES 2025 LCT projections | SSEN Distribution Future Energy Scenarios | CC BY 4.0 |
 | Live outages | [robintw/sse_powercuts](https://github.com/robintw/sse_powercuts) — mirrors SSEN live feed | Public |
 | Weather forecast (fault risk model) | [Open-Meteo](https://open-meteo.com) — free, no key required | CC BY 4.0 |
+| Complaint propensity (seed) | ONS Census 2021 regional socioeconomic profiles (age, NS-SEC, education, digital confidence) — geographic Gaussian proxy | OGL v3 |
+| Complaint propensity (full pipeline) | ONS Nomis API — Census 2021 TS007A, TS062, TS067, TS041 at LSOA level; LSOA 2021 Population Weighted Centroids (ONS Geography Portal) | OGL v3 |
 | Basemap tiles | CartoDB Dark Matter | CC BY 3.0 |
 | Satellite imagery (minimap) | ArcGIS World Imagery | Esri Terms |
 
@@ -155,7 +165,11 @@ Owns all layer state and fetched GeoJSON/headroom/LV data. Receives `outageData`
 
 **`BoundaryLayer`** — renders the 442 primary ESA polygons. Builds an NRN lookup map from `headroomData` records. The `key` prop is `boundaries-${headroomData.length}-${forecastData ? forecastDay : 'none'}` so the GeoJSON remounts when headroom loads or forecast day changes, re-running `onEachFeature` and `style` with updated data. Click is always registered — falls back to `feature.properties` when no headroom record matches. When `forecastData` is present, polygon fill colours are overridden by the forecast RAG for that primary.
 
-**`HeadroomMarkers`** — filters to GSP and BSP types only. Primary substations are intentionally excluded here (shown via shapefile instead).
+**`HeadroomMarkers`** — filters to GSP and BSP types only (further filtered by `showGSP` prop). Primary substations are intentionally excluded here (shown via shapefile instead).
+
+**`StaticSubstationMarkers`** — accepts `showGSP` prop; filters out type `'GSP'` entries when `showGSP` is false. Provides a map-empty fallback before data loads.
+
+**GSP layer toggle** — `showGSP` state in `MapView` controls GSP marker visibility independently of the headroom layer. A dashed sub-button in `LayerControls` (inside the Headroom Markers control) toggles it. The `Legend` dims the GSP entry and shows "(hidden)" when off.
 
 **`LVLayer`** — `MarkerClusterGroup` with `chunkedLoading`, `chunkInterval: 100`, `maxClusterRadius: 40`. Custom cluster icon scales from 28px to 44px by count. Labels collapse `>999` to `Nk` format.
 
@@ -166,20 +180,28 @@ Owns all layer state and fetched GeoJSON/headroom/LV data. Receives `outageData`
 Named exports only (no default export):
 
 - **`FaultMapMarkers`** — rendered inside `MapContainer` in MapView. Receives `outages` and `visible` props passed down from App state. Renders SVG warning-triangle markers and dashed affected-area polygons inside the Leaflet context.
-- **`FaultTimeline`** — 24-hour restoration timeline sorted by CML (Customer Minutes Lost = customers × minutes to ETR). Rendered in the FaultsPanel CML tab.
+- **`FaultTimeline`** — 24-hour restoration timeline sorted by CML (Customer Minutes Lost = customers × minutes to ETR). Rendered in the FaultsPanel CML tab. Accepts `complaintsData` prop; when present, adds a coloured RAG complaints-risk badge per fault row (expected complaints count + propensity multiplier) and a **Complaints Risk** summary section (total expected complaints, highest-risk fault reference, nearest primary name, formula footnote). `findNearestPrimary()` matches each fault's lat/lng to the nearest primary centroid in `lsoa-primary-complaints.json` by Euclidean distance.
 
 ### FaultsPanel.jsx
 
-Left-side slide-in drawer, opened via **⚡ Faults** in the header. Four tabs:
+Left-side slide-in drawer, opened via **⚡ Faults** in the header. Five tabs:
 
 | Tab | Content |
 |---|---|
 | **Live** | Fault fetch controls (refresh / auto-refresh / map toggle), HV/LV/PSI count badges, per-fault rows with CML, ETR, click-to-locate |
-| **CML** | `FaultTimeline` — 24hr bar chart of active faults sorted by Customer Minutes Lost, total CML summary |
+| **CML** | `FaultTimeline` — 24hr restoration bar chart sorted by Customer Minutes Lost; complaints risk badges per row; total CML + complaints risk summary section |
 | **History** | NAFIRS HV fault history bar chart (Recharts `BarChart`) per year for the selected primary substation |
-| **Forecast** | 3-day ahead fault risk RAG cards per primary — day selector, map overlay toggle, weather breakdown |
+| **Forecast** | 3-day weather summary (`WeatherCards` — RAG badge, wind mph bar, rain bar, optional snow row, temperature); site-specific or network-average when no primary selected; day selector; map overlay toggle |
+| **Model** | ML model transparency card — LOYO CV metric (coloured badge: Strong/Moderate/Weak), training coverage grid, weather feature weights, fitted formula, RAG threshold boxes |
 
-Forecast data is fetched lazily on first tab open via `fetchForecast()` (client-side 1-hour cache). Outage data is fetched on panel open and optionally auto-refreshed every 60 seconds.
+`complaintsData` state loads `/lsoa-primary-complaints.json` lazily on first CML tab open. Forecast data fetched on Forecast or Model tab open via `fetchForecast()` (client-side 1-hour cache). Outage data fetched on panel open and auto-refreshed every 60 seconds when enabled.
+
+**`WeatherCards`** — 3-column grid (Today / Tomorrow / Day+2) with:
+- RAG badge (icon + label) derived from dominant forecast RAG across all primaries that day
+- Wind bar in mph (blue <25mph, yellow <44mph, red ≥44mph) — converted from km/h using `kphToMph`
+- Rain bar (mm, green)
+- Snow row rendered only when any day has snowfall
+- Temperature in °C with colour gradient (icy blue → teal → amber → orange)
 
 ### SubstationSidebar.jsx
 
@@ -206,12 +228,16 @@ Express backend serving the built Vite frontend and proxying AI requests. Endpoi
 | `GET /api/fault-forecast` | JWT required | Returns 3-day fault risk RAG per primary — 1-hour server-side cache |
 | `GET /api/health` | None | Health check |
 
-**Fault forecast model:**
-1. `buildVulnerabilityMap()` reads `public/headroom-substations.json` and computes average annual fault rate per feeder for each primary. Sorts into percentile bands → vulnerability multiplier: bottom 25% = 0.60×, 25–50% = 0.85×, 50–75% = 1.15×, top 25% = 1.50×. Each primary is assigned to the nearest of 12 weather zones covering SEPD.
-2. Open-Meteo fetches wind gusts, precipitation, snowfall, max temperature for 3 days ahead across all 12 zones (12 HTTP requests per refresh).
-3. Weather risk score: `gusts×0.55 + rain×0.25 + snow×0.20 + temp_extreme×0.10`, capped at 1.0.
-4. Final score = weather score × vulnerability multiplier. RAG thresholds: Green < 0.20, Yellow 0.20–0.45, Red ≥ 0.45.
-5. Cache warmed on startup; refreshed hourly on demand.
+**Fault forecast model — Z-score sigmoid regression (`buildMLModel()`):**
+1. Reads `public/headroom-substations.json`. For each primary with ≥ 3 years of NAFIRS fault history, computes average annual fault rate per feeder across training years (all years except the most recent two).
+2. Standardises rates to Z-scores (μ, σ across all primaries). Applies sigmoid: `vuln = 0.60 + sigmoid((rate − μ) / σ) × 0.90` → vulnerability in [0.60, 1.50].
+3. Validation (see `scripts/validate-model.mjs`): Leave-one-year-out cross-validation across all 11 NAFIRS years; mean Spearman ρ = 0.815 ± 0.020. Held-out test ρ = 0.836. Permutation test p < 0.001. Better than naive constant-mean baseline.
+4. Each primary is assigned to the nearest of 12 weather zones covering SEPD.
+5. Open-Meteo fetches wind gusts, precipitation, snowfall, max temperature for 3 days ahead (12 HTTP requests per refresh).
+6. Weather risk score: `gusts×0.55 + rain×0.25 + snow×0.20 + temp_extreme×0.10`, capped at 1.0.
+7. Final score = weather score × vulnerability. RAG thresholds: Green < 0.20, Yellow 0.20–0.45, Red ≥ 0.45.
+8. Response includes `modelMeta` (LOYO ρ, training years, test years, μ, σ) displayed in the Model tab.
+9. Cache warmed on startup; refreshed hourly on demand.
 
 ### ChatBot.jsx — Network Intelligence Assistant
 
@@ -270,6 +296,28 @@ Anthropic Claude API only (`claude-sonnet-4-6`). Calls proxied through `POST /ap
 **Technologies:** EV count, EV chargers, domestic/non-domestic heat pumps, solar PV (MW), battery storage (MW) by year (2025–2050).
 
 **Output:** `public/dfes-by-primary.json` (keyed by normalised primary name) + `public/dfes-licence.json` (SEPD totals).
+
+### Complaint Propensity Data — Geographic Seed
+
+**`scripts/generate-complaints-seed.mjs`** (no external data download needed):
+
+1. Loads `headroom-substations.json`, `demand-profiles.json`, `sepd-primary-boundaries.geojson`.
+2. Builds `nrnToGSP` lookup from `GSP_NAME` field in the boundary GeoJSON.
+3. Applies a GSP-level propensity lookup table (18 named GSP areas, range 0.78–1.44) calibrated to ONS Census 2021 regional socioeconomic profiles (age distribution, NS-SEC, education, digital confidence per Ofgem CAM weights).
+4. Falls back to a bivariate Gaussian propensity field for primaries not covered by the GSP table — validated Surrey ~1.42, E Kent ~1.03, IoW ~0.80, Dorset ~0.90.
+5. Normalises all values so mean propensity = 1.0 across the 422 covered primaries.
+6. **Output:** `public/lsoa-primary-complaints.json` — schema: `{ meta: { baseRate: 0.0025, coverage: 422, ... }, primaries: { [nrn]: { name, lat, lng, gspArea, propensityIndex, meters, feederCount, demandRAG } } }`.
+
+**`scripts/process-lsoa-complaints.mjs`** (full Census 2021 pipeline, ~5–10 min):
+
+1. Fetches LSOA 2021 population weighted centroids from ONS Geography Portal WFS.
+2. Calls ONS Nomis API for Census 2021 tables at LSOA level: TS007A (age), TS062 (NS-SEC), TS067 (education), TS041 (households).
+3. Computes CAM propensity per LSOA: `age×0.30 + nssec×0.30 + education×0.20 + digital×0.20`.
+4. Performs point-in-polygon spatial join of LSOA centroids against `sepd-primary-boundaries.geojson`.
+5. Aggregates to primary level using household-weighted mean propensity.
+6. Normalises to mean = 1.0; overwrites the seed file with full LSOA-derived data.
+
+**Base rate calibration:** 0.0025 complaints per customer per hour at propensity = 1.0. Source: Ofgem Electricity Distribution Quality of Service Report 2024 (15–25 complaints per 1,000 customers per major 4–8hr HV outage).
 
 ---
 
@@ -343,9 +391,19 @@ The SSEN direct API (`external.distribution.prd.ssen.co.uk/opendataportal-prd/v4
 - Live faults: `SEPD_NETWORK` constant in OutagePanel
 - No toggle exists to show SHEPD faults
 
+### Fault Risk Model — Z-score Sigmoid vs Percentile Buckets
+
+The original model sorted primaries into four percentile bands and applied a fixed vulnerability multiplier per band (0.60, 0.85, 1.15, 1.50). This created artificial cliffs at quartile boundaries — two primaries with nearly identical fault rates but straddling the 75th percentile were assigned very different vulnerabilities.
+
+The replacement Z-score sigmoid is continuous: `vuln = 0.60 + sigmoid((rate − μ) / σ) × 0.90`. Output range is identical [0.60, 1.50]. The sigmoid is monotone, so Spearman ρ is unchanged by the transformation — the value is in better-calibrated mid-range scores and no boundary artefacts. Validated via `scripts/validate-model.mjs` (LOYO ρ = 0.815, permutation p < 0.001).
+
 ### Fault Risk Model — Weather Zones vs Per-Substation Fetch
 
 Fetching weather for each of 454 primaries individually would mean 454 Open-Meteo API calls per hourly refresh — wasteful and slow. Instead, 12 weather zones cover the entire SEPD footprint (4 columns × 3 rows at 0.5° resolution). Each primary is assigned to its nearest zone by Euclidean distance in lat/lng space. This reduces weather fetches to 12 per refresh while keeping geographic granularity well within the spatial variance of UK weather systems (~50km zone diameter vs typical frontal scales of hundreds of km).
+
+### Complaints Risk — Nearest-Primary Spatial Join at Runtime
+
+For each live fault, `findNearestPrimary()` matches `o.latitude / o.longitude` to the closest primary centroid in `lsoa-primary-complaints.json` by Euclidean distance in lat/lng space. This is a fast O(n) scan over ~422 primaries — well within budget for a UI render. An alternative was a pre-built spatial index, but given the small dataset size and infrequent call pattern (only on CML tab open), a linear scan is simpler and more maintainable. The nearest primary is a good proxy for the fault's ESA because HV faults occur within the primary's supply area by definition.
 
 ### z-index Strategy
 
@@ -477,6 +535,15 @@ node scripts/process-dfes.cjs
 
 # Re-simplify ESA boundaries GeoJSON
 node scripts/simplify-geojson.mjs
+
+# Rebuild complaint propensity seed (geographic proxy — no Census download needed)
+node scripts/generate-complaints-seed.mjs
+
+# Replace seed with full Census 2021 LSOA data (~5-10 min, hits ONS Nomis API)
+node scripts/process-lsoa-complaints.mjs
+
+# Validate the ML fault risk model (standalone — no server required)
+node scripts/validate-model.mjs
 ```
 
 All output goes to `public/` and is served statically by Vite.
@@ -515,8 +582,8 @@ substation-tool/
 │   ├── components/
 │   │   ├── MapView.jsx                     Map + all layer logic (~330 lines)
 │   │   ├── SubstationSidebar.jsx           5-tab detail panel (~750 lines)
-│   │   ├── OutagePanel.jsx                 FaultMapMarkers + FaultTimeline exports (~230 lines)
-│   │   ├── FaultsPanel.jsx                 Left-side faults drawer, 4 tabs (~270 lines)
+│   │   ├── OutagePanel.jsx                 FaultMapMarkers + FaultTimeline exports (~315 lines)
+│   │   ├── FaultsPanel.jsx                 Left-side faults drawer, 5 tabs (~520 lines)
 │   │   ├── ChatBot.jsx                     AI assistant (~300 lines)
 │   │   ├── SafetyPanel.jsx                 Safety standards reference drawer
 │   │   ├── DataQualityPage.jsx             Data quality full-page overlay
@@ -528,11 +595,13 @@ substation-tool/
 │       ├── substations.js                  10 static GSPs + colour helpers
 │       └── safetyStandards.js              7 UK safety standards + AI system prompt
 ├── server/
-│   └── index.mjs                           Express backend — auth, AI proxy, forecast API (~300 lines)
+│   └── index.mjs                           Express backend — auth, AI proxy, forecast API (~400 lines)
 ├── public/
 │   ├── headroom-substations.json           ~1,100 SEPD substations with headroom + NAFIRS data
 │   ├── sepd-primary-boundaries.geojson     442 primary ESA polygons (simplified)
 │   ├── ssen-lv-substations.json            ~54k LV substation points
+│   ├── demand-profiles.json                Smart meter counts per primary NRN
+│   ├── lsoa-primary-complaints.json        Complaint propensity index per primary (422 primaries)
 │   ├── dfes-by-primary.json                DFES 2025 projections by ESA
 │   └── dfes-licence.json                   DFES 2025 SEPD licence totals
 ├── scripts/
@@ -540,7 +609,10 @@ substation-tool/
 │   ├── process-dfes.cjs
 │   ├── simplify-geojson.mjs
 │   ├── setup-credentials.mjs
-│   └── read-dfes-v2.cjs
+│   ├── read-dfes-v2.cjs
+│   ├── validate-model.mjs                  ML model validation (standalone, no server needed)
+│   ├── generate-complaints-seed.mjs        Geographic proxy seed for complaint propensity data
+│   └── process-lsoa-complaints.mjs         Full Census 2021 LSOA pipeline (requires ONS Nomis API)
 └── manual_data/                            Raw source files (not committed)
     ├── 20260323_substation_locations_csv.csv
     ├── 20260324_nafirs_hv_sepd_csv.csv
@@ -565,6 +637,7 @@ substation-tool/
 | SSEN DFES 2025 | © SSEN Distribution Future Energy Scenarios 2025 (CC BY 4.0) |
 | Live outages | robintw/sse_powercuts — mirrors SSEN open data feed |
 | Weather forecast | © Open-Meteo contributors (CC BY 4.0) — open-meteo.com |
+| Complaint propensity data | © Office for National Statistics, Census 2021 (OGL v3) — via ONS Nomis API and ONS Geography Portal |
 | Basemap | © CARTO · © OpenStreetMap contributors (CC BY 3.0) |
 | Satellite imagery | © Esri, Maxar, Earthstar Geographics |
 
