@@ -228,14 +228,44 @@ function buildMLModel() {
     vulnMap[r.nrn] = { vuln: Math.round(toVuln(r.rate) * 1000) / 1000, zone: nearestZone(r.lat, r.lng) };
   });
 
-  // ── Backtest: correlate predicted vulnerability with held-out test fault rates ──
+  // ── Backtest 1: held-out test years ──────────────────────────────────────
   const testPairs = primaries
     .map(s => ({ nrn: s.nrn, testRate: avgRate(s, testYears) }))
     .filter(r => r.testRate != null && vulnMap[r.nrn]);
+  const heldOutRho = spearmanR(testPairs.map(r => vulnMap[r.nrn].vuln), testPairs.map(r => r.testRate));
 
-  const predVulns = testPairs.map(r => vulnMap[r.nrn].vuln);
-  const actRates  = testPairs.map(r => r.testRate);
-  const rho = spearmanR(predVulns, actRates);
+  // ── Backtest 2: leave-one-year-out cross-validation (more robust) ─────────
+  // For each year: train on all other years, predict that year's fault rank.
+  // This uses all 11 years and avoids reliance on any single split.
+  const loyoRhos = allYears.map(holdYear => {
+    const loYrTrain = allYears.filter(y => y !== holdYear);
+    const pts = primaries
+      .map(s => ({ s, rate: avgRate(s, loYrTrain) }))
+      .filter(p => p.rate != null && p.rate >= 0);
+    const loRates = pts.map(p => p.rate);
+    const loMu  = loRates.reduce((a, b) => a + b, 0) / loRates.length;
+    const loSig = Math.sqrt(loRates.reduce((a, b) => a + (b - loMu) ** 2, 0) / loRates.length) || 1;
+    const loMap = {};
+    pts.forEach(({ s, rate }) => { loMap[s.nrn] = 0.60 + sigmoid((rate - loMu) / loSig) * 0.90; });
+    const loPairs = primaries
+      .map(s => ({ v: loMap[s.nrn], r: avgRate(s, [holdYear]) }))
+      .filter(p => p.v != null && p.r != null);
+    return spearmanR(loPairs.map(p => p.v), loPairs.map(p => p.r));
+  }).filter(r => r !== null);
+  const loyoMean = loyoRhos.reduce((a, b) => a + b, 0) / loyoRhos.length;
+  const loyoStd  = Math.sqrt(loyoRhos.reduce((a, b) => a + (b - loyoMean) ** 2, 0) / loyoRhos.length);
+
+  // ── Signal: mean year-on-year persistence ρ ──────────────────────────────
+  const persistRhos = [];
+  for (let i = 0; i < allYears.length - 1; i++) {
+    const yA = allYears[i], yB = allYears[i + 1];
+    const pp = primaries
+      .map(s => [avgRate(s, [yA]), avgRate(s, [yB])])
+      .filter(([a, b]) => a != null && b != null);
+    const r = spearmanR(pp.map(p => p[0]), pp.map(p => p[1]));
+    if (r !== null) persistRhos.push(r);
+  }
+  const persistMean = persistRhos.reduce((a, b) => a + b, 0) / persistRhos.length;
 
   return {
     vulnMap,
@@ -244,12 +274,19 @@ function buildMLModel() {
       description: 'Fault-rate vulnerability learned from NAFIRS annual data. ' +
         'Each primary\'s average faults/feeder/year is Z-score normalised against ' +
         'the training population then mapped through a sigmoid to a continuous [0.60–1.50] ' +
-        'multiplier — replacing the four hard percentile buckets of the previous model.',
+        'multiplier. Validated via leave-one-year-out cross-validation across all 11 years.',
       trainYears,
       testYears,
       trainSize: trainSet.length,
       testSize: testPairs.length,
-      spearmanR: rho !== null ? Math.round(rho * 100) / 100 : null,
+      // Primary metric: LOYO CV (unbiased, uses all years)
+      loyoRho:    Math.round(loyoMean * 1000) / 1000,
+      loyoStd:    Math.round(loyoStd  * 1000) / 1000,
+      loyoFolds:  loyoRhos.length,
+      // Secondary: single held-out split
+      spearmanR:  heldOutRho !== null ? Math.round(heldOutRho * 100) / 100 : null,
+      // Base signal
+      persistenceRho: Math.round(persistMean * 1000) / 1000,
       mu:  Math.round(mu  * 10000) / 10000,
       sig: Math.round(sig * 10000) / 10000,
       weatherWeights: { wind: 55, rain: 25, snow: 20, temp: 10 },

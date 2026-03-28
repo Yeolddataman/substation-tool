@@ -216,7 +216,7 @@ function ForecastContent({ forecastData, forecastDay, onDayChange, forecastOverl
         <p style={{ fontSize:9, color:'#2e4460', borderTop:'1px solid rgba(255,255,255,0.04)', paddingTop:6 }}>
           Weather: Open-Meteo · Model: Z-score sigmoid regression · Calibrated to NAFIRS<br />
           Generated: {new Date(forecastData.generatedAt).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}
-          {forecastData.modelMeta?.spearmanR != null && <> · Backtest ρ={forecastData.modelMeta.spearmanR}</>}
+          {forecastData.modelMeta?.loyoRho != null && <> · CV ρ={forecastData.modelMeta.loyoRho} ±{forecastData.modelMeta.loyoStd}</>}
           {' '}<span style={{ color:'#3a5268' }}>— see Model tab</span>
         </p>
       </>)}
@@ -226,9 +226,6 @@ function ForecastContent({ forecastData, forecastDay, onDayChange, forecastOverl
 
 function ModelTab({ forecastData, onFetchForecast, loading, error }) {
   const meta = forecastData?.modelMeta;
-  const rho  = meta?.spearmanR;
-  const rhoColor = rho == null ? '#6a8099' : rho >= 0.6 ? '#00E676' : rho >= 0.4 ? '#FFD700' : '#FF4444';
-  const rhoLabel = rho == null ? '—' : rho >= 0.6 ? 'Strong' : rho >= 0.4 ? 'Moderate' : 'Weak';
 
   if (!meta) return (
     <div style={{ paddingTop: 8 }}>
@@ -243,6 +240,11 @@ function ModelTab({ forecastData, onFetchForecast, loading, error }) {
     </div>
   );
 
+  const loyo  = meta.loyoRho;
+  const held  = meta.spearmanR;
+  const pers  = meta.persistenceRho;
+  const loyoColor = loyo == null ? '#6a8099' : loyo >= 0.7 ? '#00E676' : loyo >= 0.5 ? '#FFD700' : '#FF4444';
+  const loyoLabel = loyo == null ? '—' : loyo >= 0.7 ? 'Strong' : loyo >= 0.5 ? 'Moderate' : 'Weak';
   const weights = meta.weatherWeights || {};
   const maxW = Math.max(...Object.values(weights));
 
@@ -250,40 +252,43 @@ function ModelTab({ forecastData, onFetchForecast, loading, error }) {
     <div style={{ fontSize: 11 }}>
       {/* Header card */}
       <div style={{ background: 'rgba(79,195,247,0.07)', border: '1px solid rgba(79,195,247,0.2)', borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>
-        <div style={{ fontWeight: 700, color: '#4FC3F7', fontSize: 12, marginBottom: 4 }}>
-          {meta.method}
-        </div>
+        <div style={{ fontWeight: 700, color: '#4FC3F7', fontSize: 12, marginBottom: 4 }}>{meta.method}</div>
         <p style={{ color: '#8899aa', lineHeight: 1.6, margin: 0 }}>{meta.description}</p>
       </div>
 
-      {/* Backtest metrics */}
-      <div style={{ fontWeight: 700, color: '#6a8099', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Backtest Results</div>
+      {/* Primary metric: LOYO CV */}
+      <div style={{ fontWeight: 700, color: '#6a8099', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Validation — Leave-One-Year-Out CV</div>
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${loyoColor}33`, borderRadius: 8, padding: '10px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ textAlign: 'center', minWidth: 56 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: loyoColor, lineHeight: 1 }}>{loyo ?? '—'}</div>
+          <div style={{ fontSize: 9, color: loyoColor, marginTop: 2 }}>ρ mean</div>
+        </div>
+        <div>
+          <div style={{ fontWeight: 700, color: loyoColor, marginBottom: 3 }}>{loyoLabel} predictive rank correlation</div>
+          <div style={{ color: '#6a8099', lineHeight: 1.5 }}>
+            Each of {meta.loyoFolds} years held out in turn; model trained on remaining {(meta.loyoFolds ?? 1) - 1}.
+            Std ±{meta.loyoStd} across folds.
+          </div>
+        </div>
+      </div>
+      <p style={{ fontSize: 9, color: '#3a5268', marginBottom: 14, lineHeight: 1.6 }}>
+        LOYO CV is the primary metric — it uses all years and avoids reliance on any single split.
+        Held-out test ρ ({meta.testYears?.join('–')}): <strong style={{ color: '#6a8099' }}>{held}</strong>.
+        Base signal (yr-on-yr persistence ρ): <strong style={{ color: '#6a8099' }}>{pers}</strong> — fault rates are stable year-to-year because infrastructure doesn't change quickly.
+      </p>
+
+      {/* Training coverage */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 14 }}>
         {[
-          ['Train set',   `${meta.trainSize} sites`,   '#4FC3F7'],
-          ['Test set',    `${meta.testSize} sites`,    '#4FC3F7'],
-          ['Test years',  meta.testYears?.join(', ') || '—', '#aaa'],
+          ['Sites trained', `${meta.trainSize}`, '#4FC3F7'],
+          ['Train years',   `${meta.trainYears?.[0]}–${meta.trainYears?.at(-1)}`, '#aaa'],
+          ['Test years',    meta.testYears?.join(', ') || '—', '#aaa'],
         ].map(([label, val, col]) => (
           <div key={label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, padding: '8px 10px', textAlign: 'center' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: col, marginBottom: 3 }}>{val}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: col, marginBottom: 3 }}>{val}</div>
             <div style={{ fontSize: 9, color: '#4a6070' }}>{label}</div>
           </div>
         ))}
-      </div>
-
-      {/* Spearman correlation */}
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${rhoColor}33`, borderRadius: 8, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ textAlign: 'center', minWidth: 52 }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: rhoColor, lineHeight: 1 }}>{rho ?? '—'}</div>
-          <div style={{ fontSize: 9, color: rhoColor, marginTop: 2 }}>ρ (Spearman)</div>
-        </div>
-        <div>
-          <div style={{ fontWeight: 700, color: rhoColor, marginBottom: 3 }}>{rhoLabel} rank correlation</div>
-          <div style={{ color: '#6a8099', lineHeight: 1.5 }}>
-            Predicted vulnerability rank vs actual fault rate in {meta.testYears?.join('–') || 'test years'}.
-            Training data: {meta.trainYears?.[0]}–{meta.trainYears?.at(-1)}.
-          </div>
-        </div>
       </div>
 
       {/* Weather feature weights */}
@@ -304,22 +309,22 @@ function ModelTab({ forecastData, onFetchForecast, loading, error }) {
       <div style={{ fontWeight: 700, color: '#6a8099', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Fitted Parameters</div>
       <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#4a6070', lineHeight: 1.8, background: 'rgba(0,0,0,0.2)', borderRadius: 6, padding: '8px 10px', marginBottom: 12 }}>
         <span style={{ color: '#4FC3F7' }}>vuln</span> = 0.60 + σ( (<span style={{ color: '#FFD700' }}>rate</span> − {meta.mu}) / {meta.sig} ) × 0.90<br />
-        <span style={{ color: '#6a8099' }}>range: [0.60, 1.50] · σ = sigmoid</span>
+        <span style={{ color: '#6a8099' }}>range: [0.60, 1.50] · σ = sigmoid · rate = faults/feeder/yr</span>
       </div>
 
       {/* RAG thresholds */}
-      <div style={{ fontWeight: 700, color: '#6a8099', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>RAG Thresholds</div>
+      <div style={{ fontWeight: 700, color: '#6a8099', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>RAG Thresholds (risk score)</div>
       <div style={{ display: 'flex', gap: 6 }}>
         {[['Green', `< ${meta.ragThresholds?.yellow}`, '#00E676'], ['Yellow', `${meta.ragThresholds?.yellow}–${meta.ragThresholds?.red}`, '#FFD700'], ['Red', `≥ ${meta.ragThresholds?.red}`, '#FF4444']].map(([rag, thr, col]) => (
           <div key={rag} style={{ flex: 1, textAlign: 'center', background: `${col}11`, border: `1px solid ${col}33`, borderRadius: 6, padding: '6px 4px' }}>
             <div style={{ color: col, fontWeight: 700, fontSize: 12 }}>{rag}</div>
-            <div style={{ color: '#6a8099', fontSize: 9, marginTop: 2 }}>score {thr}</div>
+            <div style={{ color: '#6a8099', fontSize: 9, marginTop: 2 }}>{thr}</div>
           </div>
         ))}
       </div>
 
       <p style={{ fontSize: 9, color: '#2e4460', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 8, marginTop: 12, lineHeight: 1.6 }}>
-        Vulnerability model trained on SSEN NAFIRS HV SEPD data · Weather: Open-Meteo (ERA5) ·
+        Vulnerability model: SSEN NAFIRS HV SEPD · Weather: Open-Meteo ·
         Generated: {new Date(forecastData.generatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
       </p>
     </div>
