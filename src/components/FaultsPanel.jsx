@@ -217,7 +217,7 @@ function ForecastContent({ forecastData, forecastDay, onDayChange, forecastOverl
           Weather: Open-Meteo · Model: Z-score sigmoid regression · Calibrated to NAFIRS<br />
           Generated: {new Date(forecastData.generatedAt).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}
           {forecastData.modelMeta?.loyoRho != null && <> · CV ρ={forecastData.modelMeta.loyoRho} ±{forecastData.modelMeta.loyoStd}</>}
-          {' '}<span style={{ color:'#3a5268' }}>— see Model tab</span>
+          {' '}<span style={{ color:'#3a5268' }}>— see Forecast Model tab</span>
         </p>
       </>)}
     </div>
@@ -331,7 +331,7 @@ function ModelTab({ forecastData, onFetchForecast, loading, error }) {
   );
 }
 
-const TABS = ['Live', 'CML', 'History', 'Forecast', 'Model'];
+const TABS = ['Live', 'CML', 'History', 'Forecast', 'Forecast Model'];
 
 export default function FaultsPanel({
   isOpen, onClose, selectedSubstation,
@@ -378,7 +378,7 @@ export default function FaultsPanel({
   }, [forecastData, onForecastLoaded]);
 
   useEffect(() => {
-    if (activeTab !== 'Forecast' && activeTab !== 'Model') return;
+    if (activeTab !== 'Forecast' && activeTab !== 'Forecast Model') return;
     loadForecast();
   }, [activeTab, loadForecast]);
 
@@ -479,7 +479,7 @@ export default function FaultsPanel({
         {activeTab === 'Forecast' && (
           <ForecastContent forecastData={forecastData} forecastDay={forecastDay} onDayChange={onForecastDayChange} forecastOverlayActive={forecastOverlayActive} onOverlayToggle={onForecastOverlayChange} selectedSubstation={selectedSubstation} loading={fcLoading} error={fcError} />
         )}
-        {activeTab === 'Model' && (
+        {activeTab === 'Forecast Model' && (
           <ModelTab forecastData={forecastData} onFetchForecast={loadForecast} loading={fcLoading} error={fcError} />
         )}
       </div>

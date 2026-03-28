@@ -301,8 +301,60 @@ export function FaultTimeline({ outages, complaintsData }) {
               <span style={{ fontSize: 9, color: '#8899aa' }}>{highestRiskFault._primary.name}</span>
             </div>
           )}
-          <div style={{ fontSize: 8, color: '#2e4460', marginTop: 5 }}>
-            Complaints = customers × hrs × {(complaintsData.meta.baseRate * 1000).toFixed(1)}/1000 cust/hr × propensity index
+          {/* Methodology visual */}
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#6a8099', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>How It's Calculated</div>
+
+            {/* Formula block */}
+            <div style={{ fontFamily: 'monospace', fontSize: 9, background: 'rgba(0,0,0,0.25)', borderRadius: 5, padding: '6px 8px', marginBottom: 8, lineHeight: 1.8, color: '#4a6070' }}>
+              <span style={{ color: '#c084fc' }}>complaints</span> ≈{' '}
+              <span style={{ color: '#4FC3F7' }}>customers</span> ×{' '}
+              <span style={{ color: '#81C784' }}>hours</span> ×{' '}
+              <span style={{ color: '#FFD700' }}>{(complaintsData.meta.baseRate * 1000).toFixed(1)}<span style={{ color: '#4a6070' }}>/1000/hr</span></span> ×{' '}
+              <span style={{ color: '#f97316' }}>propensity</span>
+            </div>
+
+            {/* CAM factor weights */}
+            <div style={{ fontSize: 8, fontWeight: 700, color: '#6a8099', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>Propensity Index — CAM Factors</div>
+            {[
+              ['Age profile',  30, '#4FC3F7', '35–54 cohort highest per Ofgem CAM'],
+              ['NS-SEC class', 30, '#c084fc', 'Managerial/professional = higher propensity'],
+              ['Education',    20, '#FFD700', 'Degree-level = higher propensity'],
+              ['Digital conf.',20, '#81C784', 'More reporting channels available'],
+            ].map(([label, pct, col, note]) => (
+              <div key={label} style={{ marginBottom: 5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 70, color: '#8899aa', fontSize: 8, flexShrink: 0 }}>{label}</div>
+                  <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 2, height: 6, overflow: 'hidden' }}>
+                    <div style={{ width: `${pct / 0.30}%`, background: col, height: '100%', borderRadius: 2, opacity: 0.85 }} />
+                  </div>
+                  <div style={{ width: 24, textAlign: 'right', color: col, fontWeight: 700, fontSize: 8 }}>{pct}%</div>
+                </div>
+                <div style={{ fontSize: 7, color: '#3a5268', paddingLeft: 76, marginTop: 1 }}>{note}</div>
+              </div>
+            ))}
+
+            {/* Propensity RAG scale */}
+            <div style={{ fontSize: 8, fontWeight: 700, color: '#6a8099', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '8px 0 5px' }}>Propensity Thresholds</div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[
+                ['Low',     '< 0.90',       '#22c55e'],
+                ['Average', '0.90–1.05',    '#eab308'],
+                ['Above',   '1.05–1.20',    '#f97316'],
+                ['High',    '≥ 1.20',       '#ef4444'],
+              ].map(([label, range, col]) => (
+                <div key={label} style={{ flex: 1, textAlign: 'center', background: `${col}11`, border: `1px solid ${col}33`, borderRadius: 4, padding: '4px 2px' }}>
+                  <div style={{ color: col, fontWeight: 700, fontSize: 8 }}>{label}</div>
+                  <div style={{ color: '#6a8099', fontSize: 7, marginTop: 1 }}>{range}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 7, color: '#2e4460', marginTop: 6 }}>
+              Base rate: {(complaintsData.meta.baseRate * 1000).toFixed(1)}/1000 cust/hr at propensity = 1.0 ·
+              Source: Ofgem Electricity Distribution Quality of Service Report 2024 ·
+              Propensity: ONS Census 2021 ({complaintsData.meta.method?.includes('LSOA') ? 'LSOA' : 'geographic proxy'})
+            </div>
           </div>
         </div>
       )}
